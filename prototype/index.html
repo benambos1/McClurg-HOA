@@ -651,6 +651,28 @@ function openProjUpdate(pid){
       p.hist.unshift([fmt(TODAY),t]);p.latest=t;if(n)p.next=n;p.status=st.value;p.f=PF[p.status];[...b.querySelector('#pu-files').files].forEach(f=>p.photos.push(f.name));
       logAct(`updated ${p.title}`);closeDrawer();renderAll();toast('Update posted.')}});
 }
+let nextProj=1;
+function openNewProject(){
+  openDrawer('Start a new project',`<form id="f-np" class="stack">
+   <div><label for="np-title">Project name</label><input id="np-title" required placeholder="Example: Mailbox cluster replacement"></div>
+   <div><label for="np-type">Type of project</label><select id="np-type"><option>Roads</option><option>Landscaping</option><option>Infrastructure</option><option>Common areas</option><option>Developer responsibility</option><option>Other</option></select></div>
+   <div><label for="np-who">Who is responsible?</label><select id="np-who"><option>HOA project</option><option>Developer responsibility</option><option>Village or county</option><option>Contractor</option></select></div>
+   <div><label for="np-status">Status</label><select id="np-status">${Object.keys(PSTAT).map(s=>`<option>${s}</option>`).join('')}</select></div>
+   <div><label for="np-about">What's the project and where does it stand?</label><textarea id="np-about" rows="4" required placeholder="Example: Three mailbox clusters on Doris Dr have broken doors. The board is getting quotes."></textarea></div>
+   <div><label for="np-next">Next planned action</label><input id="np-next" placeholder="Example: Pick a contractor at the Dec 16 meeting."></div>
+   <div><label for="np-files">Photos or documents (optional)</label><input id="np-files" type="file" multiple accept="image/*,application/pdf"><div class="previews" id="np-prev"></div></div>
+   <div><label for="np-vis">Who can see it?</label><select id="np-vis"><option value="all">Everyone, including the public homepage</option><option value="members">Signed-in homeowners only</option></select></div>
+   <label class="check"><input type="checkbox" id="np-mail"> Email residents about this new project</label>
+   <button type="submit">Start project</button></form>`,
+  b=>{b.querySelector('#np-files').onchange=e=>previewFiles(e.target,b.querySelector('#np-prev'));
+    b.querySelector('#f-np').onsubmit=e=>{e.preventDefault();
+      const t=b.querySelector('#np-title').value.trim(),about=b.querySelector('#np-about').value.trim(),st=b.querySelector('#np-status').value,fl=[...b.querySelector('#np-files').files];
+      projects.unshift({id:'new'+(nextProj++),f:PF[st],status:st,title:t,cat:`${b.querySelector('#np-type').value} · ${b.querySelector('#np-who').value}`,
+        latest:about,next:b.querySelector('#np-next').value.trim()||'To be decided.',hist:[[fmt(TODAY),'Project started. '+about]],
+        photos:fl.filter(f=>f.type.startsWith('image/')).map(f=>f.name),files:fl.filter(f=>!f.type.startsWith('image/')).map(f=>f.name)});
+      projFilter='all';logAct(`started project “${t}”`);closeDrawer();renderAll();location.hash='projects';
+      toast(b.querySelector('#np-mail').checked?'Project started. Email to residents queued (prototype: not sent).':'Project started.')}});
+}
 function openAddEvent(){
   openDrawer('Add a meeting or event',`<form id="f-ev" class="stack">
    <div><label for="ev-title">Name</label><input id="ev-title" required placeholder="Example: Spring yard sale"></div>
@@ -759,7 +781,7 @@ function renderDash(){
 function renderProjects(){
   const el=$('#v-projects'),board=session.role==='board';
   const n=f=>projects.filter(p=>f==='all'||p.f===f).length;
-  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Community Projects</p><h1>What's being worked on</h1></div>${board?'<button data-act="b-proj">Add an update</button>':''}</div>
+  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Community Projects</p><h1>What's being worked on</h1></div>${board?'<div class="row"><button data-act="b-newproj">Start a new project</button><button class="ghost" data-act="b-proj">Add an update</button></div>':''}</div>
   <p class="lede">Every update is dated and posted by a board member, so you can see exactly where things stand.</p>
   <div class="filters" role="group" aria-label="Filter by status">${[['all','All'],['progress','In Progress'],['developer','Awaiting Developer'],['done','Completed']].map(([k,t])=>`<button data-act="pfilt" data-f="${k}" aria-pressed="${projFilter===k}">${t} (${n(k)})</button>`).join('')}</div>
   <div class="stack">${projects.filter(p=>projFilter==='all'||p.f===projFilter).map(p=>`
@@ -796,7 +818,7 @@ function boardOverview(){
     <div class="card kpi"><span class="muted">2027 dues paid early</span><b>${early}</b><span class="muted">Due March 1, 2027</span></div>
   </div>
   <div class="card stack"><h2>Quick actions</h2><div class="admin-actions">
-    <button data-act="b-post">${ICON.plus}Post announcement</button><button data-act="b-proj">${ICON.plus}Add project update</button><button data-act="b-event">${ICON.plus}Add meeting or event</button>
+    <button data-act="b-post">${ICON.plus}Post announcement</button><button data-act="b-newproj">${ICON.plus}Start a new project</button><button data-act="b-proj">${ICON.plus}Add project update</button><button data-act="b-event">${ICON.plus}Add meeting or event</button>
     <button data-act="b-upload">${ICON.up}Upload minutes or document</button><button data-act="b-remind">${ICON.mail}Send dues reminders</button><button data-act="b-check">${ICON.check}Record a check payment</button>
   </div></div>
   <div class="grid2">
@@ -869,7 +891,7 @@ const ACT={
   'b-pfilter':d=>{propFilter.status=d.f;renderBoard()},
   'b-ifilter':d=>{issueFilter=d.f;renderBoard()},
   'b-prop':d=>openProperty(+d.id),'b-issue':d=>openBoardIssue(+d.id),
-  'b-post':openPost,'b-proj':d=>openProjUpdate(d.id),'b-event':openAddEvent,'b-upload':openUpload,'b-remind':openRemind,'b-check':d=>openCheck(d.id?+d.id:null),'b-addprop':openAddProp,'b-import':openImport
+  'b-post':openPost,'b-newproj':openNewProject,'b-proj':d=>openProjUpdate(d.id),'b-event':openAddEvent,'b-upload':openUpload,'b-remind':openRemind,'b-check':d=>openCheck(d.id?+d.id:null),'b-addprop':openAddProp,'b-import':openImport
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el.dataset)}});
 renderAll();
