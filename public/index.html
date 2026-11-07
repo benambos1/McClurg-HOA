@@ -8,12 +8,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
 <style>
-/* Layout: neighborhood-portal shell — sticky top bar with 4 big view tabs; each view is a single centered column, max 1120px, stacking to one column on phones */
+/* Layout: neighborhood-portal shell — sticky top bar with view tabs; one centered column (max 1120px); actions open a right-side drawer (full width on phones) */
 :root{
   --bg:#f6f8f7; --surface:#ffffff; --ink:#14231f; --muted:#4a5c56; --line:#d5dfdb;
   --green:#1f5c4a; --green-ink:#ffffff; --green-soft:#e3efe9;
   --sky:#1d4f7a; --sky-soft:#e2ecf5;
   --ok:#1d6b3c; --ok-soft:#dff1e5; --warn:#8a5a00; --warn-soft:#fbefd2; --bad:#a32020; --bad-soft:#f9e1e1;
+  --scrim:rgba(10,24,19,.45);
   --display:"Source Serif 4", Georgia, "Times New Roman", serif;
   --body:"Atkinson Hyperlegible", "Segoe UI", Arial, sans-serif;
   --radius:10px;
@@ -22,35 +23,51 @@
   --bg:#0f1715; --surface:#17221f; --ink:#eef4f1; --muted:#a9bbb4; --line:#2c3b37;
   --green:#5fb898; --green-ink:#0b1a15; --green-soft:#1d332b;
   --sky:#8fbbe3; --sky-soft:#1a2b3b;
-  --ok:#7fd39f; --ok-soft:#173225; --warn:#f0c060; --warn-soft:#352a12; --bad:#f29a9a; --bad-soft:#3a1c1c; color-scheme:dark}}
+  --ok:#7fd39f; --ok-soft:#173225; --warn:#f0c060; --warn-soft:#352a12; --bad:#f29a9a; --bad-soft:#3a1c1c;
+  --scrim:rgba(0,0,0,.6); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1715; --surface:#17221f; --ink:#eef4f1; --muted:#a9bbb4; --line:#2c3b37;
   --green:#5fb898; --green-ink:#0b1a15; --green-soft:#1d332b;
   --sky:#8fbbe3; --sky-soft:#1a2b3b;
-  --ok:#7fd39f; --ok-soft:#173225; --warn:#f0c060; --warn-soft:#352a12; --bad:#f29a9a; --bad-soft:#3a1c1c; color-scheme:dark}
+  --ok:#7fd39f; --ok-soft:#173225; --warn:#f0c060; --warn-soft:#352a12; --bad:#f29a9a; --bad-soft:#3a1c1c;
+  --scrim:rgba(0,0,0,.6); color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.55}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
-h1{font-size:clamp(2rem,4.5vw,3rem)} h2{font-size:1.6rem} h3{font-size:1.25rem}
+h1{font-size:clamp(2rem,4.5vw,3rem)} h2{font-size:1.6rem} h3{font-size:1.2rem}
 p{margin:0}
 a{color:var(--sky)}
 button,.btn{font:inherit;font-weight:700;font-size:1.05rem;border-radius:8px;padding:.8rem 1.3rem;border:2px solid var(--green);background:var(--green);color:var(--green-ink);cursor:pointer;min-height:52px;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;text-decoration:none}
-.btn.ghost{background:transparent;color:var(--green)}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+.btn.ghost,button.ghost{background:transparent;color:var(--green)}
+button.small,.btn.small{min-height:44px;padding:.45rem 1rem;font-size:.98rem}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.textbtn{background:none;border:0;color:var(--sky);padding:.15rem 0;min-height:0;font-size:inherit;text-decoration:underline;text-underline-offset:3px}
+button.linkrow{background:none;border:0;color:inherit;padding:0;min-height:0;display:grid;gap:.2rem;justify-content:stretch;text-align:left;font-weight:400;width:100%;border-radius:4px}
+button.linkrow:hover b{color:var(--green);text-decoration:underline}
+:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
 .wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.small{font-size:.92rem} .spread{justify-content:space-between} .grow{flex:1 1 220px;min-width:0} .min0{min-width:0}
 
-/* banner */
-.demo{background:var(--warn-soft);color:var(--warn);font-size:.95rem;text-align:center;padding-block:.45rem}
+/* demo bar + header */
+.demo{background:var(--warn-soft);color:var(--warn);font-size:.95rem;padding-block:.45rem}
+.demo-in{display:flex;flex-wrap:wrap;gap:.4rem 1rem;justify-content:center;align-items:center}
+.viewas{display:flex;gap:.3rem;align-items:center;flex-wrap:wrap}
+.viewas button{min-height:34px;padding:.15rem .7rem;font-size:.9rem;background:transparent;color:var(--warn);border:1.5px solid var(--warn)}
+.viewas button[aria-pressed="true"]{background:var(--warn);color:var(--warn-soft)}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
-.topin{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;padding-block:.75rem}
+.topin{display:flex;align-items:center;gap:.75rem 1rem;flex-wrap:wrap;padding-block:.75rem}
 .brand{display:flex;align-items:center;gap:.7rem;margin-right:auto;text-decoration:none;color:var(--ink)}
 .brand b{font-family:var(--display);font-size:1.35rem;display:block;line-height:1.1}
 .brand small{color:var(--muted);font-size:.85rem}
 nav.tabs{display:flex;gap:.4rem;flex-wrap:wrap}
-nav.tabs a{padding:.65rem 1rem;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:700;border:2px solid transparent}
+nav.tabs a{padding:.6rem .95rem;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:700;border:2px solid transparent}
 nav.tabs a[aria-current="page"]{background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.acct{display:flex;align-items:center;gap:.7rem}
+.acct span{display:grid;line-height:1.2;font-size:.95rem} .acct small{color:var(--muted)}
 
 main{padding-block:2rem 4rem}
 section.view{display:grid;gap:2rem}
@@ -58,41 +75,66 @@ section.view{display:grid;gap:2rem}
 .eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:.85rem;font-weight:700;color:var(--green)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.4rem}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:1.25rem}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1.25rem}
-.stack{display:grid;gap:.9rem} .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
+.stack{display:grid;gap:.9rem;align-content:start} .row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center}
 .muted{color:var(--muted)} .num{font-variant-numeric:tabular-nums}
 .pill{display:inline-block;font-size:.88rem;font-weight:700;padding:.2rem .7rem;border-radius:999px;white-space:nowrap}
-.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--sky-soft);color:var(--sky)}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--sky-soft);color:var(--sky)} .p-neutral{background:var(--line);color:var(--ink)}
 .list{list-style:none;padding:0;margin:0;display:grid}
-.list li{padding-block:.85rem;border-top:1px solid var(--line);display:grid;gap:.2rem}
+.list li{padding-block:.8rem;border-top:1px solid var(--line);display:grid;gap:.2rem}
 .list li:first-child{border-top:0;padding-top:0}
 .date{font-size:.92rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.note{background:var(--sky-soft);border-radius:8px;padding:.8rem 1rem}
 
-/* home hero */
+/* home */
 .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;align-items:center}
 .hero-map{background:var(--green-soft);border-radius:var(--radius);aspect-ratio:4/3;max-width:100%;overflow:hidden}
 .hero-map svg{width:100%;height:100%;display:block}
 @media (max-width:820px){.hero{grid-template-columns:1fr}}
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:1rem}
-.quick a{display:grid;gap:.3rem;padding:1.2rem;border-radius:var(--radius);border:2px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
-.quick a:hover{border-color:var(--green)}
-.quick a b{font-size:1.15rem}
+.quick button,.quick a{display:grid;gap:.3rem;justify-content:stretch;text-align:left;padding:1.2rem;border-radius:var(--radius);border:2px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:400}
+.quick button:hover,.quick a:hover{border-color:var(--green)}
+.quick b{font-size:1.15rem}
 
-/* dashboard tiles */
+/* dashboard */
+.myhome{display:grid;grid-template-columns:minmax(0,250px) 1fr;gap:1.5rem;align-items:center}
+@media (max-width:640px){.myhome{grid-template-columns:1fr}}
 .tile h2{display:flex;align-items:center;gap:.6rem}
 .ico{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:var(--green-soft);color:var(--green);flex:none}
 .ico svg{width:22px;height:22px}
 .dues-amt{font-family:var(--display);font-size:2.6rem;font-weight:700;line-height:1}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem}
-.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:700;text-align:right}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.35rem 1rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:700;text-align:right;min-width:0;overflow-wrap:anywhere}
+details summary{cursor:pointer;font-weight:700;color:var(--green);min-height:44px;display:flex;align-items:center}
+.files{display:flex;gap:.5rem;flex-wrap:wrap}
+button.file,.file{display:inline-flex;gap:.45rem;align-items:center;padding:.45rem .85rem;border:1px solid var(--line);border-radius:8px;font-size:.95rem;font-weight:400;background:var(--bg);color:var(--ink);min-height:44px}
+button.file:hover{border-color:var(--green)}
+.file svg{width:18px;height:18px;flex:none;color:var(--green)}
+
+/* house art */
+.thumb,.big{width:100%;aspect-ratio:16/11;display:block;border-radius:8px;object-fit:cover;max-width:100%}
+.big{border-radius:10px;height:auto}
+.mini{width:84px;aspect-ratio:16/11;flex:none;border-radius:6px;display:block;object-fit:cover}
+
+/* forms */
 label{font-weight:700;display:block;margin-bottom:.3rem}
 input,select,textarea{font:inherit;width:100%;padding:.7rem .8rem;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:52px}
-.drop{border:2px dashed var(--line);border-radius:8px;padding:1rem;text-align:center;color:var(--muted)}
-.toast{background:var(--ok-soft);color:var(--ok);padding:.8rem 1rem;border-radius:8px;font-weight:700}
+textarea{min-height:110px}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:.75rem;min-width:0}
+legend{font-weight:700;margin-bottom:.4rem;padding:0}
+.choice{display:grid;grid-template-columns:auto 1fr auto;gap:.8rem;align-items:center;border:2px solid var(--line);border-radius:10px;padding:1rem;cursor:pointer;font-weight:400;margin:0}
+.choice:has(input:checked){border-color:var(--green);background:var(--green-soft)}
+.choice input,.check input{width:22px;height:22px;min-height:0;padding:0;accent-color:var(--green);flex:none}
+.check{display:flex;gap:.6rem;align-items:center;font-weight:400;margin:0}
+.previews{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+.previews img{width:84px;height:62px;object-fit:cover;border-radius:6px}
+.divider{display:flex;align-items:center;gap:.6rem;color:var(--muted);font-size:.9rem}
+.divider::before,.divider::after{content:"";flex:1;border-top:1px solid var(--line)}
+.fromchip{display:flex;gap:.8rem;align-items:center;background:var(--green-soft);border-radius:8px;padding:.6rem}
+button.fromchip{color:var(--ink);border:0;font-weight:400;justify-content:flex-start;text-align:left;min-height:0}
 
 /* projects */
 .filters{display:flex;gap:.5rem;flex-wrap:wrap}
-.filters button{background:var(--surface);color:var(--ink);border-color:var(--line);min-height:46px;padding:.5rem 1rem}
+.filters button{background:var(--surface);color:var(--ink);border-color:var(--line);min-height:46px;padding:.45rem 1rem}
 .filters button[aria-pressed="true"]{background:var(--green);color:var(--green-ink);border-color:var(--green)}
 .proj{display:grid;gap:1rem}
 .proj-head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:flex-start}
@@ -101,94 +143,112 @@ input,select,textarea{font:inherit;width:100%;padding:.7rem .8rem;border:2px sol
 .timeline{list-style:none;margin:0;padding:0 0 0 1.2rem;border-left:3px solid var(--line);display:grid;gap:.8rem}
 .timeline li{position:relative}
 .timeline li::before{content:"";position:absolute;left:calc(-1.2rem - 8px);top:.45rem;width:13px;height:13px;border-radius:50%;background:var(--surface);border:3px solid var(--green)}
-.files{display:flex;gap:.5rem;flex-wrap:wrap}
-.file{display:inline-flex;gap:.4rem;align-items:center;padding:.45rem .8rem;border:1px solid var(--line);border-radius:8px;font-size:.95rem;background:var(--bg)}
 .photos{display:flex;gap:.5rem;flex-wrap:wrap}
 .ph{width:120px;max-width:100%;aspect-ratio:4/3;border-radius:6px;background:linear-gradient(135deg,var(--green-soft),var(--sky-soft));display:grid;place-items:center;font-size:.8rem;color:var(--muted);text-align:center;padding:.3rem}
-details summary{cursor:pointer;font-weight:700;color:var(--green);min-height:44px;display:flex;align-items:center}
 
 /* board */
+.seg{display:flex;gap:.4rem;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:.7rem}
+.seg button{background:transparent;color:var(--ink);border-color:transparent;min-height:48px}
+.seg button[aria-pressed="true"]{background:var(--green-soft);color:var(--green);border-color:var(--green)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1rem}
 .kpi b{font-family:var(--display);font-size:2rem;display:block;font-variant-numeric:tabular-nums}
 .bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--green)}
 .tablewrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:620px;font-variant-numeric:tabular-nums}
-th,td{text-align:left;padding:.7rem .6rem;border-bottom:1px solid var(--line)}
-th{font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.admin-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:.75rem}
+table{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:.65rem .6rem;border-bottom:1px solid var(--line)}
+th{font-size:.88rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.admin-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:.75rem}
 .admin-actions button{justify-content:flex-start;background:var(--surface);color:var(--ink);border-color:var(--line)}
 .admin-actions button:hover{border-color:var(--green)}
+.admin-actions svg{width:20px;height:20px;color:var(--green);flex:none}
 .lock{display:flex;gap:.6rem;align-items:center;background:var(--sky-soft);color:var(--sky);padding:.7rem 1rem;border-radius:8px;font-weight:700}
+.toolbar{display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end}
+.toolbar select{width:auto;max-width:100%}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr));gap:1rem}
+button.pcard{display:grid;gap:.45rem;justify-content:stretch;align-content:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--radius);padding:.6rem .6rem .8rem;text-align:left;font-weight:400;min-height:0}
+button.pcard:hover{border-color:var(--green)}
+.pcard b{font-size:1.02rem;line-height:1.25}
+.pcard .meta{display:flex;justify-content:space-between;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.88rem;color:var(--muted)}
+.counts{display:flex;gap:.4rem 1.5rem;flex-wrap:wrap;color:var(--muted)}
+.counts b{color:var(--ink)}
+.lockcard{max-width:720px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(540px,100%);background:var(--surface);z-index:50;transform:translateX(105%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.18);padding-top:env(safe-area-inset-top,0px);visibility:hidden}
+.drawer.open{transform:none;visibility:visible}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding-block:.9rem;padding-left:1.25rem;padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+.drawer-head h2{font-size:1.45rem;outline:none}
+.drawer-head .x{background:transparent;color:var(--ink);border:2px solid var(--line);min-height:48px;min-width:48px;padding:0;flex:none}
+.drawer-body{overflow-y:auto;padding-block:1.25rem calc(2rem + env(safe-area-inset-bottom,0px));padding-left:1.25rem;padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:1.1rem;align-content:start;flex:1}
+.receipt{border:2px dashed var(--line);border-radius:10px;padding:1.2rem;display:grid;gap:.8rem}
+.stamp{justify-self:start;border:3px solid var(--ok);color:var(--ok);font-weight:700;padding:.15rem .8rem;border-radius:6px;letter-spacing:.12em;transform:rotate(-4deg)}
+.checkout{border:2px solid var(--line);border-radius:10px;padding:1.2rem;display:grid;gap:.8rem;background:var(--bg)}
+.lockline{display:flex;gap:.5rem;align-items:center;color:var(--muted);font-size:.92rem}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);padding:.85rem 1.2rem;border-radius:10px;font-weight:700;width:max-content;max-width:calc(100% - 32px);box-shadow:0 8px 30px rgba(0,0,0,.25)}
 footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);font-size:.95rem}
-.min0{min-width:0}
-@media (prefers-reduced-motion:no-preference){.view{animation:fade .25s ease}@keyframes fade{from{opacity:.6}to{opacity:1}}}
+@media (prefers-reduced-motion:reduce){.drawer{transition:none}}
 </style>
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
 </head>
 <body>
 
-<div class="demo"><div class="wrap">Prototype with sample data. No real accounts, payments or emails.</div></div>
+<div class="demo"><div class="wrap demo-in">
+  <span>Prototype with sample data. Nothing is emailed or charged.</span>
+  <div class="viewas" role="group" aria-label="View the site as"><span>View as:</span>
+    <button data-act="viewas" data-r="visitor">Visitor</button><button data-act="viewas" data-r="homeowner">Homeowner</button><button data-act="viewas" data-r="board">Board member</button>
+  </div>
+</div></div>
 <header class="top"><div class="wrap topin">
   <a class="brand" href="#home">
-    <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" fill="var(--green)"/><path d="M8 30 L22 15 L36 30" fill="none" stroke="var(--green-ink)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="17" y="24" width="10" height="9" fill="var(--green-ink)"/></svg>
-    <span><b>Stillwater Crossing HOA</b><small>Homeowners Association · 200 homes</small></span>
+    <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" style="fill:var(--green)"/><path d="M8 30 L22 15 L36 30" fill="none" style="stroke:var(--green-ink)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="17" y="24" width="10" height="9" style="fill:var(--green-ink)"/></svg>
+    <span><b>Stillwater Crossing HOA</b><small>West Milton, Ohio · 200 homes</small></span>
   </a>
-  <nav class="tabs" aria-label="Main">
-    <a href="#home">Home</a><a href="#dashboard">My Home</a><a href="#projects">Projects</a><a href="#board">Board</a>
-  </nav>
+  <nav class="tabs" aria-label="Main" id="nav"></nav>
+  <div id="acct"></div>
 </div></header>
 
 <main class="wrap">
-
-<!-- HOME -->
 <section class="view" id="v-home">
   <div class="hero">
     <div class="stack">
       <p class="eyebrow">Welcome, neighbors</p>
       <h1>Everything about our neighborhood, in one place.</h1>
       <p class="lede">Pay dues, read board news, report a problem, and follow the road repair work. Built to be simple on any phone or computer.</p>
-      <div class="row"><a class="btn" href="#dashboard">Homeowner sign in</a><a class="btn ghost" href="#projects">See community projects</a></div>
+      <div class="row" id="heroBtns"></div>
     </div>
-    <div class="hero-map" aria-label="Illustrated neighborhood map">
-      <svg viewBox="0 0 400 300" role="img"><title>Neighborhood street map illustration</title>
-        <rect width="400" height="300" fill="var(--green-soft)"/>
-        <path d="M-10 210 C80 200 120 120 210 120 S330 60 410 70" fill="none" stroke="var(--surface)" stroke-width="22"/>
-        <path d="M200 120 L200 310" stroke="var(--surface)" stroke-width="18"/>
-        <circle cx="200" cy="250" r="26" fill="var(--surface)"/>
-        <path d="M-10 210 C80 200 120 120 210 120 S330 60 410 70" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="8 8"/>
-        <g fill="var(--green)" opacity=".85">
-          <rect x="40" y="150" width="22" height="18" rx="2"/><rect x="80" y="135" width="22" height="18" rx="2"/><rect x="130" y="85" width="22" height="18" rx="2"/><rect x="250" y="70" width="22" height="18" rx="2"/><rect x="300" y="45" width="22" height="18" rx="2"/><rect x="350" y="35" width="22" height="18" rx="2"/>
-          <rect x="230" y="150" width="22" height="18" rx="2"/><rect x="230" y="200" width="22" height="18" rx="2"/><rect x="150" y="190" width="22" height="18" rx="2"/><rect x="150" y="240" width="22" height="18" rx="2"/><rect x="290" y="120" width="22" height="18" rx="2"/><rect x="60" y="240" width="22" height="18" rx="2"/>
+    <div class="hero-map">
+      <svg viewBox="0 0 400 300" role="img" aria-label="Illustrated neighborhood map">
+        <rect width="400" height="300" style="fill:var(--green-soft)"/>
+        <path d="M-10 40 L410 28" style="stroke:var(--surface)" stroke-width="20"/>
+        <path d="M352 30 L362 310" style="stroke:var(--surface)" stroke-width="14"/>
+        <path d="M200 34 L196 90 M60 95 H330 M196 90 C196 160 170 210 60 270 M196 120 C230 170 260 210 300 230 L362 232 M120 95 L150 230 M220 150 H300" fill="none" style="stroke:var(--surface)" stroke-width="13" stroke-linecap="round"/>
+        <circle cx="196" cy="95" r="12" style="fill:var(--surface)"/>
+        <g style="fill:var(--green)" opacity=".8">
+          <rect x="230" y="105" width="14" height="11" rx="2"/><rect x="252" y="105" width="14" height="11" rx="2"/><rect x="274" y="105" width="14" height="11" rx="2"/><rect x="296" y="76" width="14" height="11" rx="2"/><rect x="230" y="76" width="14" height="11" rx="2"/>
+          <rect x="160" y="190" width="14" height="11" rx="2"/><rect x="138" y="205" width="14" height="11" rx="2"/><rect x="116" y="222" width="14" height="11" rx="2"/><rect x="94" y="238" width="14" height="11" rx="2"/><rect x="210" y="185" width="14" height="11" rx="2"/><rect x="232" y="200" width="14" height="11" rx="2"/><rect x="254" y="214" width="14" height="11" rx="2"/>
+          <rect x="230" y="160" width="14" height="11" rx="2"/><rect x="256" y="160" width="14" height="11" rx="2"/><rect x="130" y="130" width="14" height="11" rx="2"/><rect x="100" y="104" width="14" height="11" rx="2"/>
         </g>
-        <g fill="var(--ok)" opacity=".35"><circle cx="330" cy="200" r="34"/><circle cx="360" cy="240" r="24"/></g>
-        <g><circle cx="215" cy="160" r="10" fill="var(--warn)"/><text x="232" y="146" font-family="Atkinson Hyperlegible, Arial" font-size="13" font-weight="700" fill="var(--ink)">Road repair</text></g>
-        <text x="320" y="205" font-family="Atkinson Hyperlegible, Arial" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="middle">Pond</text>
+        <g><circle cx="186" cy="168" r="9" style="fill:var(--warn)"/><text x="80" y="172" font-family="Atkinson Hyperlegible, Arial" font-size="13" font-weight="700" style="fill:var(--ink)">Road repair</text></g>
+        <text x="30" y="20" font-family="Atkinson Hyperlegible, Arial" font-size="12" font-weight="700" style="fill:var(--muted)">State Route 571</text>
+        <text x="372" y="160" font-family="Atkinson Hyperlegible, Arial" font-size="12" font-weight="700" style="fill:var(--muted)" transform="rotate(90 372 160)">Iddings Rd</text>
       </svg>
     </div>
   </div>
-
   <div class="quick">
-    <a href="#dashboard"><b>Pay my dues</b><span class="muted">Bank transfer or card</span></a>
-    <a href="#dashboard"><b>Report an issue</b><span class="muted">Streetlights, roads, common areas</span></a>
+    <button data-act="pay"><b>Pay my dues</b><span class="muted">Bank transfer or card</span></button>
+    <button data-act="report"><b>Report an issue</b><span class="muted">Streetlights, roads, common areas</span></button>
     <a href="#projects"><b>Road repair status</b><span class="muted">Awaiting developer response</span></a>
-    <a href="#dashboard"><b>Meetings &amp; events</b><span class="muted">Next: Nov 18, 7:00 PM</span></a>
+    <button data-act="events"><b>Meetings &amp; events</b><span class="muted">Next: Nov 18, 7:00 PM</span></button>
   </div>
-
   <div class="grid2">
-    <div class="card stack">
-      <h2>Latest news</h2>
-      <ul class="list">
-        <li><span class="date">Nov 4, 2026</span><b>2027 dues set at $350, due March 1</b><span class="muted">The board approved the 2027 budget. No increase from last year.</span></li>
-        <li><span class="date">Oct 28, 2026</span><b>Leaf pickup moves to Tuesdays</b><span class="muted">Bag leaves at the curb by 7 AM through December 15.</span></li>
-        <li><span class="date">Oct 15, 2026</span><b>Developer meeting on road repairs</b><span class="muted">Summary posted in the Projects tracker.</span></li>
-      </ul>
-    </div>
+    <div class="card stack"><h2>Latest news</h2><ul class="list" id="homeNews"></ul></div>
     <div class="card stack">
       <h2>Contact the board</h2>
       <dl class="kv">
         <dt>Email</dt><dd>board@stillwatercrossingHOA.com</dd>
-        <dt>Mailing address</dt><dd>PO Box 000, Ohio</dd>
+        <dt>Mailing address</dt><dd>PO Box (to be added)</dd>
         <dt>Board meetings</dt><dd>3rd Wednesday, 7 PM</dd>
         <dt>Emergency</dt><dd>Call 911</dd>
       </dl>
@@ -196,234 +256,631 @@ footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);fo
     </div>
   </div>
 </section>
-
-<!-- HOMEOWNER DASHBOARD -->
-<section class="view" id="v-dashboard" hidden>
-  <div class="stack">
-    <p class="eyebrow">My Home · 4127 Meadow Run Dr. · Lot 84</p>
-    <h1>Good evening, Margaret.</h1>
-    <p class="lede">Your 2026 dues are paid. 2027 dues of $350 open January 1.</p>
-  </div>
-
-  <div class="grid2">
-    <!-- Announcements -->
-    <div class="card tile stack">
-      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg></span>Community Announcements</h2>
-      <ul class="list">
-        <li><span class="row"><span class="pill p-bad">Important</span><span class="date">Nov 5</span></span><b>Water main flushing Nov 12–13</b><span class="muted">Water may look cloudy. Run cold tap for 2 minutes.</span></li>
-        <li><span class="date">Nov 4</span><b>2027 dues approved: $350</b></li>
-        <li><span class="date">Oct 28</span><b>Leaf pickup moves to Tuesdays</b></li>
-      </ul>
-      <a href="#dashboard" class="btn ghost">See all announcements</a>
-    </div>
-
-    <!-- Dues -->
-    <div class="card tile stack">
-      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>My HOA Dues</h2>
-      <div class="row"><span class="dues-amt num">$0.00</span><span class="pill p-ok">2026 paid in full</span></div>
-      <dl class="kv num">
-        <dt>Annual dues</dt><dd>$350.00</dd>
-        <dt>Next due date</dt><dd>March 1, 2027</dd>
-        <dt>Last payment</dt><dd>Feb 14, 2026 · Bank</dd>
-      </dl>
-      <div class="stack" id="payBox">
-        <button id="payBtn">Pay Now</button>
-        <div id="payOpts" class="stack" hidden>
-          <p class="muted">Choose how to pay $350.00. You'll finish on Stripe's secure page.</p>
-          <button><span>Bank transfer (ACH) — recommended</span></button>
-          <p class="muted" style="font-size:.95rem">Lowest fee. Takes 3–5 business days to clear.</p>
-          <button class="btn ghost">Credit or debit card</button>
-          <p class="muted" style="font-size:.95rem">A processing fee of about 3% applies. Clears right away.</p>
-        </div>
-      </div>
-      <details><summary>Payment history &amp; receipts</summary>
-        <ul class="list num">
-          <li><span class="row" style="justify-content:space-between"><b>2026 dues · $350.00</b><a href="#dashboard">Receipt</a></span><span class="date">Feb 14, 2026 · Bank transfer</span></li>
-          <li><span class="row" style="justify-content:space-between"><b>2025 dues · $350.00</b><a href="#dashboard">Receipt</a></span><span class="date">Feb 27, 2025 · Check #1182</span></li>
-        </ul>
-      </details>
-    </div>
-
-    <!-- Report -->
-    <div class="card tile stack">
-      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg></span>Report an Issue</h2>
-      <form id="issueForm" class="stack">
-        <div><label for="iType">What kind of issue?</label>
-          <select id="iType"><option>Streetlight out</option><option>Road or pothole</option><option>Common area / landscaping</option><option>Rule concern</option><option>Something else</option></select></div>
-        <div><label for="iDesc">Tell us what you saw</label>
-          <textarea id="iDesc" rows="3">Streetlight at the corner of Meadow Run and Cedar Ct. has been out since Sunday.</textarea></div>
-        <div class="drop">Add photos or documents (optional)</div>
-        <button type="submit">Send to the board</button>
-        <div id="issueToast" class="toast" hidden>Sent. Issue #1047 created. You'll get an email when the board updates it.</div>
-      </form>
-      <div class="stack"><b>My open issues</b>
-        <div class="row" style="justify-content:space-between"><span>#1031 Cracked sidewalk, Lot 84</span><span class="pill p-info">Board reviewing</span></div>
-        <p class="muted" style="font-size:.95rem">Board, Nov 2: “Contractor will inspect the week of Nov 16.”</p>
-      </div>
-    </div>
-
-    <!-- Events -->
-    <div class="card tile stack">
-      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>Events &amp; Meetings</h2>
-      <ul class="list">
-        <li><span class="date">Wed, Nov 18 · 7:00 PM · Clubhouse</span><b>Monthly board meeting</b><a href="#dashboard">Read agenda</a></li>
-        <li><span class="date">Sat, Dec 5 · 4:00 PM · Front entrance</span><b>Holiday lights &amp; cocoa</b></li>
-        <li><span class="date">Mon, Mar 1, 2027</span><b>2027 dues due</b></li>
-      </ul>
-      <a href="#dashboard" class="btn ghost">Past meeting minutes</a>
-    </div>
-  </div>
-
-  <div class="card stack">
-    <h2>Documents</h2>
-    <div class="files">
-      <span class="file">📄 Bylaws (PDF)</span><span class="file">📄 Covenants &amp; Restrictions</span><span class="file">📄 Community Rules 2026</span><span class="file">📄 2027 Budget</span><span class="file">📄 October Minutes</span>
-    </div>
-  </div>
-</section>
-
-<!-- PROJECTS -->
-<section class="view" id="v-projects" hidden>
-  <div class="stack">
-    <p class="eyebrow">Community Projects</p>
-    <h1>What's being worked on</h1>
-    <p class="lede">Every update is dated and posted by a board member, so you can see exactly where things stand.</p>
-  </div>
-  <div class="filters" role="group" aria-label="Filter by status" id="filters">
-    <button aria-pressed="true" data-f="all">All (4)</button>
-    <button aria-pressed="false" data-f="progress">In Progress</button>
-    <button aria-pressed="false" data-f="developer">Awaiting Developer</button>
-    <button aria-pressed="false" data-f="done">Completed</button>
-  </div>
-  <div class="stack" id="projList"></div>
-</section>
-
-<!-- BOARD -->
-<section class="view" id="v-board" hidden>
-  <div class="row" style="justify-content:space-between">
-    <div class="stack min0">
-      <p class="eyebrow">Board Administration</p>
-      <h1>Board dashboard</h1>
-    </div>
-    <div class="lock"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Signed in as Treasurer · 2-step verified</div>
-  </div>
-
-  <div class="kpis">
-    <div class="card kpi"><span class="muted">2026 dues collected</span><b>$64,750</b><div class="bar"><i style="width:92.5%"></i></div><span class="muted num">185 of 200 homes · 92.5%</span></div>
-    <div class="card kpi"><span class="muted">Overdue accounts</span><b style="color:var(--bad)">15</b><span class="muted num">$5,250 outstanding</span></div>
-    <div class="card kpi"><span class="muted">Open issues</span><b>7</b><span class="muted">2 new this week</span></div>
-    <div class="card kpi"><span class="muted">Operating account</span><b>$48,210</b><span class="muted">As of Nov 1 statement</span></div>
-  </div>
-
-  <div class="card stack">
-    <h2>Quick actions</h2>
-    <div class="admin-actions">
-      <button>＋ Post announcement</button><button>＋ Add project update</button><button>＋ Add event or meeting</button><button>⬆ Upload minutes or document</button><button>✉ Send dues reminder</button><button>✓ Record a check payment</button>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <div class="card stack min0">
-      <div class="row" style="justify-content:space-between"><h2>Overdue accounts</h2><button class="btn ghost">Remind all 15</button></div>
-      <div class="tablewrap"><table>
-        <thead><tr><th>Lot</th><th>Address</th><th>Owed</th><th>Days late</th><th>Last reminder</th></tr></thead>
-        <tbody>
-          <tr><td>12</td><td>3904 Cedar Ct.</td><td>$350</td><td><span class="pill p-bad">248</span></td><td>Oct 1</td></tr>
-          <tr><td>47</td><td>4015 Meadow Run Dr.</td><td>$350</td><td><span class="pill p-bad">248</span></td><td>Oct 1</td></tr>
-          <tr><td>63</td><td>4102 Meadow Run Dr.</td><td>$700</td><td><span class="pill p-bad">613</span></td><td>Sep 15</td></tr>
-          <tr><td>118</td><td>211 Willow Bend</td><td>$175</td><td><span class="pill p-warn">95</span></td><td>Oct 20</td></tr>
-        </tbody></table></div>
-      <p class="muted">Showing 4 of 15 · sample names withheld</p>
-    </div>
-    <div class="card stack min0">
-      <h2>Issues to review</h2>
-      <ul class="list">
-        <li><span class="row" style="justify-content:space-between"><b>#1046 Streetlight out, Willow Bend</b><span class="pill p-warn">New</span></span><span class="date">Nov 6 · Lot 121 · 1 photo</span></li>
-        <li><span class="row" style="justify-content:space-between"><b>#1045 Trailer parked on street 9 days</b><span class="pill p-warn">New</span></span><span class="date">Nov 5 · Lot 33 · private</span></li>
-        <li><span class="row" style="justify-content:space-between"><b>#1031 Cracked sidewalk, Lot 84</b><span class="pill p-info">Reviewing</span></span><span class="date">Oct 30 · contractor Nov 16</span></li>
-        <li><span class="row" style="justify-content:space-between"><b>#1022 Pond fountain not running</b><span class="pill p-ok">Resolved</span></span><span class="date">Oct 21 · closed Oct 29</span></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="grid2">
-    <div class="card stack">
-      <h2>2026 budget vs. actual</h2>
-      <div class="stack num" id="budget"></div>
-    </div>
-    <div class="card stack">
-      <h2>Recent activity log</h2>
-      <ul class="list">
-        <li><span class="date">Nov 6, 9:14 AM</span><span><b>D. Ross</b> recorded check #2044 for Lot 150</span></li>
-        <li><span class="date">Nov 5, 6:30 PM</span><span><b>K. Patel</b> posted “Water main flushing”</span></li>
-        <li><span class="date">Nov 4, 8:02 PM</span><span><b>K. Patel</b> updated Road Repair project</span></li>
-        <li><span class="date">Nov 2, 10:45 AM</span><span><b>J. Lin</b> replied to issue #1031</span></li>
-      </ul>
-    </div>
-  </div>
-</section>
+<section class="view" id="v-dashboard" hidden></section>
+<section class="view" id="v-projects" hidden></section>
+<section class="view" id="v-board" hidden></section>
 </main>
 
-<footer><div class="wrap row" style="justify-content:space-between">
+<footer><div class="wrap row spread">
   <span>Stillwater Crossing Homeowners Association · stillwatercrossingHOA.com</span><span>Prototype · Phase 1</span>
 </div></footer>
 
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+  <div class="drawer-head"><h2 id="drawerTitle" tabindex="-1"></h2><button class="x" id="drawerX" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
 <script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=n=>'$'+Math.round(n).toLocaleString('en-US');
+const TODAY=new Date();
+const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+const fmtLong=d=>d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+const greet=()=>{const h=TODAY.getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'};
+function rng(seed){return()=>{seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(571);const pick=a=>a[Math.floor(R()*a.length)];
+const ICON={
+ doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+ mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg>',
+ lock:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+ mega:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>',
+ card:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+ warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17h.01"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7M5 10v10h14V10"/></svg>'
+};
+
+/* ---------- sample data: properties ---------- */
+const STREETS=[['Stillwater St',18,100],['Doris Dr',20,200],['June Cir',16,300],['Joyce Ln',22,400],['Louise Ln',18,500],['Kelly Ct',14,600],['Whitney Wy',24,700],['Rachel Ann Blvd',34,800],['Folly Rd',22,900],['Heather Pl',12,1000]];
+const FIRST=['James','Linda','Robert','Patricia','Michael','Jennifer','David','Susan','Daniel','Karen','Mark','Nancy','Paul','Lisa','Steven','Betty','Andrew','Sandra','Kevin','Donna','Brian','Carol','Gary','Ruth','Eric','Sharon','Greg','Amy','Scott','Angela','Tyler','Megan','Jason','Rachel','Logan','Hannah'];
+const LAST=['Carter','Brooks','Turner','Morgan','Reed','Foster','Hayes','Bennett','Price','Ward','Coleman','Jenkins','Perry','Long','Powell','Sullivan','Russell','Griffin','Wallace','Fisher','Graham','Hunt','Stone','Warren','Dixon','Burke','Shaw','Lane','Kramer','Yoder','Holt','Barnes'];
+const SIDING=['#d9d4c7','#b8c4c9','#8fa3ad','#e8e2d6','#a7b39a','#c9b8a3','#6f7f8c','#f0ede6','#9c8f80','#bfc9bf','#7d8a78','#cbd3d8'];
+const ROOF=['#3d4248','#55524d','#2f3a40','#5b4a40','#46494f'];
+const BUILDER='Builder (sample)';
+const props=[];let lotNo=1;
+STREETS.forEach(([street,count,base])=>{for(let i=0;i<count;i++){
+  const r=R();const status=r<.83?'occupied':r<.92?'construction':'lot';const num=base+1+i*2;
+  const p={id:lotNo,lot:lotNo,num,street,address:`${num} ${street}`,status,owners:[],siding:pick(SIDING),roof:pick(ROOF),garageLeft:R()<.5,photo:null,
+    owed2026:0,prior:0,pending:0,dues2027:'open',lastReminder:'',ledger:[],notes:'',parcel:'SAMPLE-'+String(lotNo).padStart(4,'0')};
+  if(status==='occupied'){
+    const last=pick(LAST),n=R()<.55?2:1;
+    for(let k=0;k<n;k++){const f=pick(FIRST);p.owners.push({name:`${f} ${last}`,email:`${f[0].toLowerCase()}.${last.toLowerCase()}@example.com`,login:R()<.82?'Active':'No login yet'})}
+    const o=R();
+    if(o<.075){p.owed2026=350;if(R()<.3)p.prior=350;p.lastReminder=pick(['Oct 1, 2026','Oct 20, 2026','Sep 15, 2026'])}
+    else if(o<.09){p.owed2026=175;p.lastReminder='Oct 20, 2026'}
+  } else p.owners.push({name:BUILDER,email:'builder@example.com',login:'Builder account'});
+  if(p.owed2026<350)p.ledger.push({year:2026,amount:350-p.owed2026,date:`${pick(['Jan','Feb','Mar'])} ${1+Math.floor(R()*27)}, 2026`,method:pick(['Bank transfer','Bank transfer','Card','Check #'+(1000+Math.floor(R()*900))]),status:'Paid'});
+  if(status==='occupied'&&!p.prior&&R()<.9)p.ledger.push({year:2025,amount:350,date:`${pick(['Jan','Feb','Mar'])} ${1+Math.floor(R()*27)}, 2025`,method:pick(['Bank transfer','Card','Check #'+(1000+Math.floor(R()*900))]),status:'Paid'});
+  props.push(p);lotNo++}});
+const byId=id=>props.find(p=>p.id==id);
+Object.assign(byId(84),{status:'occupied',owners:[{name:'Margaret Hale',email:'m.hale@example.com',login:'Active'},{name:'Tom Hale',email:'t.hale@example.com',login:'Active'}],owed2026:0,prior:0,dues2027:'open',lastReminder:'',siding:'#a7b39a',roof:'#3d4248',
+  ledger:[{year:2026,amount:350,date:'Feb 14, 2026',method:'Bank transfer',status:'Paid'},{year:2025,amount:350,date:'Feb 27, 2025',method:'Check #1182',status:'Paid'}]});
+Object.assign(byId(131),{status:'occupied',owners:[{name:'Karen Patel',email:'k.patel@example.com',login:'Active · Board'}],owed2026:0,prior:0,lastReminder:'',
+  ledger:[{year:2026,amount:350,date:'Jan 9, 2026',method:'Card',status:'Paid'}]});
+const USERS={homeowner:{name:'Margaret Hale',short:'Margaret',propId:84},board:{name:'Karen Patel',short:'Karen',title:'Board Treasurer',propId:131}};
+const occOn=(street,n=0)=>props.filter(p=>p.street===street&&p.status==='occupied')[n].id;
+const bal=p=>p.owed2026+p.prior;
+const amountDue=p=>Math.max(0,bal(p)-p.pending)+(p.dues2027==='open'?350:0);
+const DUE26=new Date(2026,2,1);
+const daysLate=p=>Math.max(0,Math.floor((TODAY-DUE26)/864e5))+(p.prior?365:0);
+
+/* ---------- other sample data ---------- */
+let nextIssue=1047;
+const issues=[
+ {id:1046,propId:occOn('Kelly Ct'),type:'Streetlight out',where:'On my street',desc:'The streetlight at the end of the Kelly Ct cul-de-sac has been out since Sunday night.',status:'New',date:'Nov 6, 2026',files:1,updates:[]},
+ {id:1045,propId:occOn('Doris Dr',2),type:'Rule concern',where:'On my street',desc:'A camper trailer has been parked on Doris Dr for 9 days.',status:'New',date:'Nov 5, 2026',files:0,updates:[]},
+ {id:1040,propId:occOn('Rachel Ann Blvd',3),type:'Road or pothole',where:'Somewhere else in the neighborhood',desc:'Large pothole where Rachel Ann Blvd meets Louise Ln.',status:'Scheduled',date:'Nov 1, 2026',files:2,updates:[{by:'Board',date:'Nov 3, 2026',text:'Added to the road repair project. Cold patch scheduled for Nov 12.'}]},
+ {id:1031,propId:84,type:'Common area or sidewalk',where:'At my home',desc:'The sidewalk slab in front of my driveway is cracked and lifting about an inch.',status:'Board reviewing',date:'Oct 30, 2026',files:1,updates:[{by:'Board',date:'Nov 2, 2026',text:'Thank you. A contractor will inspect the week of Nov 16.'}]},
+ {id:1022,propId:occOn('Stillwater St'),type:'Common area or sidewalk',where:'Common area or entrance',desc:'Standing water in the common area by the entrance after every rain.',status:'Resolved',date:'Oct 21, 2026',files:0,updates:[{by:'Board',date:'Oct 29, 2026',text:'Drain grate cleared by the landscaper. Please let us know if it happens again.'}]},
+ {id:1012,propId:84,type:'Something else',where:'On my street',desc:"Our mailbox cluster door won't lock.",status:'Resolved',date:'Sep 28, 2026',files:0,updates:[{by:'Board',date:'Oct 3, 2026',text:'The post office replaced the lock.'}]}
+];
+let nextAnn=5;
+const anns=[
+ {id:1,date:'Nov 5, 2026',title:'Water main flushing Nov 12–13',body:'The village will flush water mains on our streets Nov 12 and 13. Your water may look cloudy for a few hours. Run the cold tap for 2 minutes before use.',important:true,public:true},
+ {id:2,date:'Nov 4, 2026',title:'2027 dues set at $350, due March 1',body:'The board approved the 2027 budget at the October meeting. Annual dues stay at $350 and are due March 1, 2027. You can pay early online.',important:false,public:true},
+ {id:3,date:'Oct 28, 2026',title:'Leaf pickup moves to Tuesdays',body:'Bag leaves at the curb by 7 AM on Tuesdays through December 15.',important:false,public:true},
+ {id:4,date:'Oct 15, 2026',title:'Summary of developer meeting on roads',body:'The board met with the developer about unfinished road work. Full notes and next steps are in the Projects tracker.',important:false,public:false}
+];
+let nextEvent=5;
+const events=[
+ {id:1,d:new Date(2026,10,18),time:'7:00 PM',where:'Location listed in agenda',title:'Monthly board meeting',type:'Meeting',agenda:['Treasurer report','Road repair update from the developer','Front entrance landscaping','Open floor for residents']},
+ {id:2,d:new Date(2026,11,5),time:'4:00 PM',where:'Front entrance',title:'Holiday lights & cocoa',type:'Community event',agenda:[]},
+ {id:3,d:new Date(2027,0,20),time:'7:00 PM',where:'Location listed in agenda',title:'Annual homeowners meeting',type:'Meeting',agenda:['Election of two board seats','2027 budget review','Year in review']},
+ {id:4,d:new Date(2027,2,1),time:'',where:'',title:'2027 dues due',type:'Reminder',agenda:[]}
+];
+let nextDoc=8;
+const docs=[
+ {id:1,title:'Bylaws',cat:'Bylaws & rules',date:'Jan 2024'},{id:2,title:'Declaration of Covenants & Restrictions',cat:'Bylaws & rules',date:'Jan 2024'},
+ {id:3,title:'Community Rules 2026',cat:'Bylaws & rules',date:'Mar 2026'},{id:4,title:'2027 Budget',cat:'Budget & finance',date:'Oct 2026'},
+ {id:5,title:'October 2026 Minutes',cat:'Minutes',date:'Oct 2026'},{id:6,title:'September 2026 Minutes',cat:'Minutes',date:'Sep 2026'},
+ {id:7,title:'Exterior Change Request Form',cat:'Forms',date:'Feb 2026'}
+];
 const projects=[
- {f:'developer',status:'Awaiting Developer Response',cls:'p-warn',title:'Meadow Run Drive road repair',cat:'Roads · Developer responsibility',
-  latest:'The board sent a formal letter asking the developer to commit to a repair date before winter.',
-  next:'Follow-up call with the developer if no reply by Nov 20.',
-  hist:[['Nov 4, 2026','Formal letter sent to developer requesting repair schedule.'],['Oct 15, 2026','Board met with developer. Developer agreed the top coat was never finished.'],['Sep 2, 2026','Engineer inspection found 14 potholes and edge cracking.'],['Jul 10, 2026','Project opened after 22 resident reports.']],
-  photos:['Pothole near Lot 47','Edge crack at Cedar Ct.','Inspection map'],files:['Engineer report (PDF)','Letter to developer (PDF)']},
- {f:'progress',status:'In Progress',cls:'p-info',title:'Front entrance landscaping',cat:'Landscaping · HOA project',
-  latest:'New shrubs are planted. Mulch and lighting go in next week.',
-  next:'Install two entrance spotlights, week of Nov 16.',
+ {id:'road',f:'developer',status:'Awaiting Developer Response',title:'Neighborhood road repairs',cat:'Roads · Developer responsibility',
+  latest:'The board sent a formal letter asking the developer to commit to a repair date before winter.',next:'Follow-up call with the developer if no reply by Nov 20.',
+  hist:[['Nov 4, 2026','Formal letter sent to developer requesting a repair schedule.'],['Oct 15, 2026','Board met with developer about the unfinished top coat.'],['Sep 2, 2026','Engineer inspection found 14 potholes and edge cracking.'],['Jul 10, 2026','Project opened after 22 resident reports.']],
+  photos:['Pothole, Rachel Ann Blvd','Edge crack, Louise Ln','Inspection map'],files:['Engineer report (PDF)','Letter to developer (PDF)']},
+ {id:'entrance',f:'progress',status:'In Progress',title:'Front entrance landscaping',cat:'Landscaping · HOA project',
+  latest:'New shrubs are planted. Mulch and lighting go in next week.',next:'Install two entrance spotlights, week of Nov 16.',
   hist:[['Nov 3, 2026','Shrubs planted along both sides of the sign.'],['Oct 20, 2026','Contract signed with landscaper ($6,800, within budget).'],['Sep 16, 2026','Residents approved plan at board meeting.']],
   photos:['Before','New shrubs'],files:['Landscape plan (PDF)']},
- {f:'progress',status:'In Progress',cls:'p-info',title:'Pond fountain and aerator',cat:'Infrastructure · HOA project',
-  latest:'Fountain repaired. Aerator replacement is scheduled for spring.',
-  next:'Get two quotes for a new aerator by January.',
-  hist:[['Oct 29, 2026','Fountain pump repaired and running.'],['Oct 21, 2026','Resident reported fountain off.']],
-  photos:['Fountain running'],files:[]},
- {f:'done',status:'Completed',cls:'p-ok',title:'Streetlight LED upgrade',cat:'Infrastructure · Completed',
-  latest:'All 31 streetlights now use LED bulbs. Expected to save about $1,100 a year.',
-  next:'None. Project closed.',
-  hist:[['Aug 30, 2026','Final 9 lights converted. Project closed.'],['Jun 12, 2026','First 22 lights converted.']],
-  photos:['New LED fixture'],files:['Final invoice (PDF)']}
+ {id:'drain',f:'progress',status:'In Progress',title:'Common area drainage',cat:'Infrastructure · HOA project',
+  latest:'Drain grate cleared. Engineer will check whether a larger pipe is needed.',next:'Get two quotes for drainage work by January.',
+  hist:[['Oct 29, 2026','Landscaper cleared the drain grate.'],['Oct 21, 2026','Resident reported standing water.']],photos:['Standing water'],files:[]},
+ {id:'led',f:'done',status:'Completed',title:'Streetlight LED upgrade',cat:'Infrastructure · Completed',
+  latest:'All 31 streetlights now use LED bulbs. Expected to save about $1,100 a year.',next:'None. Project closed.',
+  hist:[['Aug 30, 2026','Final 9 lights converted. Project closed.'],['Jun 12, 2026','First 22 lights converted.']],photos:['New LED fixture'],files:['Final invoice (PDF)']}
 ];
-function renderProjects(f){
-  document.getElementById('projList').innerHTML=projects.filter(p=>f==='all'||p.f===f).map(p=>`
+const PSTAT={'In Progress':'p-info','Awaiting Developer Response':'p-warn','Completed':'p-ok','On Hold':'p-neutral'};
+const PF={'In Progress':'progress','Awaiting Developer Response':'developer','Completed':'done','On Hold':'progress'};
+const activity=[
+ {when:'Nov 6, 9:14 AM',who:'D. Ross',what:'recorded check #2044 for Lot 150'},
+ {when:'Nov 5, 6:30 PM',who:'K. Patel',what:'posted “Water main flushing Nov 12–13”'},
+ {when:'Nov 4, 8:02 PM',who:'K. Patel',what:'updated Neighborhood road repairs'},
+ {when:'Nov 2, 10:45 AM',who:'J. Lin',what:'replied to report #1031'}
+];
+const logAct=what=>activity.unshift({when:TODAY.toLocaleDateString('en-US',{month:'short',day:'numeric'})+', '+TODAY.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),who:'K. Patel',what});
+
+/* ---------- state ---------- */
+let session={role:'visitor'},pendingThen=null;
+let boardTab='overview',propFilter={q:'',street:'',status:'all'},issueFilter='open',projFilter='all';
+const myProp=()=>byId(USERS[session.role]?.propId);
+const ISTAT={'New':'p-warn','Board reviewing':'p-info','Scheduled':'p-info','Resolved':'p-ok'};
+
+/* ---------- house illustration (stand-in until a real photo is uploaded) ---------- */
+function houseSVG(p,cls){
+  if(p.photo)return `<img class="${cls}" src="${p.photo}" alt="Photo of ${esc(p.address)}">`;
+  let g='';
+  if(p.status==='lot'){
+    g=`<rect x="78" y="52" width="4" height="34" fill="#8a6a45"/><rect x="56" y="38" width="48" height="22" rx="2" fill="#faf7ef" stroke="#8a6a45" stroke-width="2"/><text x="80" y="53" text-anchor="middle" font-size="11" font-weight="700" fill="#5a4630" font-family="Arial,sans-serif">LOT ${p.lot}</text>`;
+  } else if(p.status==='construction'){
+    g=`<rect x="26" y="74" width="108" height="6" fill="#b9b6ae"/><g stroke="#b07d48" stroke-width="3" fill="none" stroke-linecap="round"><path d="M32 74V44M54 74V44M76 74V44M98 74V44M120 74V44M30 44H130M24 46 80 18 136 46"/><path d="M80 18V44M52 32V44M108 32V44" stroke-width="2"/></g>`;
+  } else {
+    const gx=p.garageLeft?36:92,dx=p.garageLeft?106:44,wx=p.garageLeft?78:64;
+    g=`<path d="M${gx} 76 L${gx-12} 110 H${gx+44} L${gx+32} 76Z" fill="#cfccc5"/><rect x="30" y="42" width="100" height="34" fill="${p.siding}"/><path d="M22 44 L80 14 L138 44Z" fill="${p.roof}"/>
+    <rect x="${gx}" y="52" width="32" height="24" fill="#eef0f0" stroke="#9aa3a8"/><path d="M${gx} 58H${gx+32}M${gx} 64H${gx+32}M${gx} 70H${gx+32}" stroke="#c4cacd"/>
+    <rect x="${dx}" y="56" width="11" height="20" fill="#2f4a40"/><rect x="${wx}" y="52" width="16" height="13" fill="#d6e6f2" stroke="#fff" stroke-width="2"/>
+    <circle cx="${p.garageLeft?96:36}" cy="76" r="5" fill="#5d8a5a"/><circle cx="${p.garageLeft?124:84}" cy="76" r="5" fill="#5d8a5a"/>`;
+  }
+  return `<svg class="${cls}" viewBox="0 0 160 110" role="img" aria-label="Placeholder picture of ${esc(p.address)}"><rect width="160" height="110" style="fill:var(--sky-soft)"/><rect y="76" width="160" height="34" style="fill:var(--green-soft)"/>${g}</svg>`;
+}
+const statusPill=p=>({occupied:'<span class="pill p-info">Occupied</span>',construction:'<span class="pill p-warn">Under construction</span>',lot:'<span class="pill p-neutral">Vacant lot</span>'})[p.status];
+const duesPill=p=>{const b=bal(p);if(b>0)return p.pending>=b?'<span class="pill p-warn">Payment pending</span>':`<span class="pill p-bad">Owes ${money0(b)}</span>`;return p.owners[0]?.name===BUILDER?'<span class="pill p-neutral">Builder paid</span>':'<span class="pill p-ok">Paid</span>'};
+const ownerLine=p=>p.owners.map(o=>esc(o.name)).join(' &amp; ');
+
+/* ---------- drawer + toast ---------- */
+let lastFocus=null;
+function openDrawer(title,html,mount){
+  lastFocus=document.activeElement;
+  $('#drawerTitle').textContent=title;$('#drawerBody').innerHTML=html;$('#drawerBody').scrollTop=0;
+  $('#scrim').hidden=false;const d=$('#drawer');d.classList.add('open');d.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+  if(mount)mount($('#drawerBody'));
+  setTimeout(()=>$('#drawerTitle').focus(),30);
+}
+function closeDrawer(){
+  const d=$('#drawer');d.classList.remove('open');d.setAttribute('aria-hidden','true');$('#scrim').hidden=true;document.body.style.overflow='';
+  if(lastFocus&&document.contains(lastFocus))lastFocus.focus();
+}
+$('#drawerX').onclick=closeDrawer;$('#scrim').onclick=closeDrawer;
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#drawer').classList.contains('open'))closeDrawer()});
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(t._h);t._h=setTimeout(()=>t.hidden=true,4500)}
+function need(reason,fn){session.role==='visitor'?openSignIn(reason,fn):fn()}
+function previewFiles(input,box){box.innerHTML='';[...input.files].forEach(f=>{if(f.type.startsWith('image/')){const i=new Image();i.src=URL.createObjectURL(f);i.alt=f.name;box.appendChild(i)}else{const s=document.createElement('span');s.className='file';s.textContent=f.name;box.appendChild(s)}})}
+
+/* ---------- sign in ---------- */
+function openSignIn(reason,then){
+  pendingThen=then||null;
+  openDrawer('Sign in',`
+   ${reason?`<div class="note">${esc(reason)}</div>`:''}
+   <form id="f-in" class="stack">
+     <div><label for="in-email">Email</label><input id="in-email" type="email" autocomplete="email" value="m.hale@example.com"></div>
+     <div><label for="in-pass">Password</label><input id="in-pass" type="password" autocomplete="current-password" value="sample-pass"></div>
+     <button type="submit">Sign in</button>
+     <button type="button" class="textbtn" id="in-forgot" style="justify-self:start">Forgot your password?</button>
+   </form>
+   <div class="divider">Prototype shortcuts</div>
+   <div class="stack"><button type="button" class="ghost" data-demo="homeowner">Sign in as Margaret (homeowner, Lot 84)</button><button type="button" class="ghost" data-demo="board">Sign in as Karen (board treasurer)</button></div>
+   <p class="muted small">Each login is linked to one home in the property list. Board members also enter a 6-digit code from an authenticator app.</p>`,
+  b=>{
+    b.querySelector('#f-in').onsubmit=e=>{e.preventDefault();/patel|board/i.test(b.querySelector('#in-email').value)?mfa():finishSignIn('homeowner')};
+    b.querySelector('#in-forgot').onclick=forgot;
+    b.querySelectorAll('[data-demo]').forEach(x=>x.onclick=()=>x.dataset.demo==='board'?mfa():finishSignIn('homeowner'));
+  });
+}
+function mfa(){
+  $('#drawerTitle').textContent='Confirm it’s you';
+  $('#drawerBody').innerHTML=`<p>Board accounts need a second step. Open your authenticator app and enter the 6-digit code for Stillwater Crossing HOA.</p>
+   <form id="f-mfa" class="stack"><div><label for="mfa-code">6-digit code</label><input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="482913"></div><button type="submit">Verify and sign in</button></form>`;
+  $('#f-mfa').onsubmit=e=>{e.preventDefault();finishSignIn('board')};
+}
+function forgot(){
+  $('#drawerTitle').textContent='Reset your password';
+  $('#drawerBody').innerHTML=`<p>Enter the email the board has on file for your home. We'll send a link to set a new password.</p>
+   <form id="f-fg" class="stack"><div><label for="fg-email">Email</label><input id="fg-email" type="email" value="m.hale@example.com"></div><button type="submit">Send reset link</button></form><div id="fg-done" class="note" hidden>If that email is on file, a reset link is on its way. It works for 1 hour.</div>`;
+  $('#f-fg').onsubmit=e=>{e.preventDefault();$('#fg-done').hidden=false};
+}
+function finishSignIn(role){session={role};closeDrawer();renderAll();toast(`Signed in as ${USERS[role].name}`);const t=pendingThen;pendingThen=null;if(t)setTimeout(t,280)}
+
+/* ---------- homeowner drawers ---------- */
+function openPay(){
+  const p=myProp(),b=Math.max(0,bal(p)-p.pending),open=p.dues2027==='open',total=b+(open?350:0);
+  if(total<=0){openDrawer('Pay HOA dues',`<p>You have nothing due right now. Thank you!</p>${p.dues2027==='pending'?'<div class="note">Your bank transfer is on its way. It usually clears in 4 business days.</div>':''}`);return}
+  const fee=Math.round((total*0.029+0.30)*100)/100;
+  openDrawer('Pay HOA dues',`
+   <div class="card stack" style="padding:1rem">
+     ${b>0?`<div class="row spread"><span>Past-due balance</span><b class="num">${money(b)}</b></div>`:''}
+     ${open?`<div class="row spread"><span>2027 annual dues <span class="muted small">(due Mar 1, 2027)</span></span><b class="num">${money(350)}</b></div>`:''}
+     <div class="row spread" style="border-top:1px solid var(--line);padding-top:.6rem"><b>Total</b><b class="num">${money(total)}</b></div>
+   </div>
+   <fieldset><legend>How would you like to pay?</legend>
+     <label class="choice"><input type="radio" name="pm" value="ach" checked><span><b>Bank transfer (ACH)</b> <span class="pill p-ok">Recommended</span><br><span class="muted small">No added fee. Takes about 4 business days to clear.</span></span><b class="num">${money(total)}</b></label>
+     <label class="choice"><input type="radio" name="pm" value="card"><span><b>Credit or debit card</b><br><span class="muted small">Adds a ${money(fee)} card processing fee (2.9% + 30¢). Clears right away.</span></span><b class="num">${money(total+fee)}</b></label>
+   </fieldset>
+   <button id="pay-go">Continue to secure checkout</button>
+   <p class="muted small">Payments are handled by Stripe. This website never sees or stores your bank account or card number.</p>`,
+  bd=>{bd.querySelector('#pay-go').onclick=()=>{
+    const m=bd.querySelector('input[name=pm]:checked').value,amt=m==='card'?total+fee:total;
+    $('#drawerBody').innerHTML=`<div class="checkout"><div class="lockline">${ICON.lock} checkout.stripe.com</div>
+      <b>Stillwater Crossing HOA · ${money(amt)}</b>
+      <p>In the finished site, this step is Stripe's secure page. You'd ${m==='ach'?'pick your bank and sign in to it':'enter your card'} there, then come back here automatically.</p></div>
+      <button id="pay-sim">Simulate a successful payment</button><button class="ghost" id="pay-back">Go back</button>`;
+    $('#pay-back').onclick=openPay;
+    $('#pay-sim').onclick=()=>{
+      const d=fmt(TODAY),st=m==='ach'?'Pending':'Paid',meth=m==='ach'?'Bank transfer':'Card';
+      if(open){p.dues2027=m==='ach'?'pending':'paid';p.ledger.unshift({year:2027,amount:350,date:d,method:meth,status:st})}
+      if(b>0){if(m==='ach')p.pending+=b;else{p.owed2026=0;p.prior=0}p.ledger.unshift({year:2026,amount:b,date:d,method:meth,status:st})}
+      $('#drawerTitle').textContent=m==='ach'?'Payment started':'Payment received';
+      $('#drawerBody').innerHTML=`<div class="note"><b>${m==='ach'?'Your bank transfer is on its way.':'Thank you, your dues are paid.'}</b><br>${m==='ach'?'It shows as pending until your bank confirms it, usually in 4 business days. Your balance updates automatically then.':'Your balance is updated.'}</div>
+        <p class="muted">A receipt was emailed to ${esc(p.owners[0].email)}. (Prototype: no email was sent.)</p><button id="pay-done">Done</button>`;
+      $('#pay-done').onclick=closeDrawer;renderAll();
+    };
+  }});
+}
+function openReceipt(i){
+  const p=myProp(),l=p.ledger[i];
+  openDrawer('Receipt',`<div class="receipt"><div class="row spread"><b>Stillwater Crossing HOA</b><span class="stamp">PAID</span></div>
+   <dl class="kv num"><dt>Receipt no.</dt><dd>SC-${l.year}-${String(p.lot).padStart(4,'0')}</dd><dt>Date</dt><dd>${l.date}</dd><dt>Property</dt><dd>${esc(p.address)} · Lot ${p.lot}</dd><dt>Paid by</dt><dd>${ownerLine(p)}</dd><dt>For</dt><dd>${l.year} annual dues</dd><dt>Method</dt><dd>${esc(l.method)}</dd><dt>Amount</dt><dd>${money(l.amount)}</dd></dl></div>
+   <p class="muted small">On the live site this receipt downloads as a PDF.</p>`);
+}
+function openReport(){
+  const p=myProp();
+  openDrawer('Report an issue',`
+   <div class="fromchip">${houseSVG(p,'mini')}<div><span class="muted small">Reporting from your home</span><br><b>${esc(p.address)}</b> · Lot ${p.lot}</div></div>
+   <form id="f-rep" class="stack">
+     <div><label for="r-type">What kind of issue?</label><select id="r-type"><option>Streetlight out</option><option>Road or pothole</option><option>Common area or sidewalk</option><option>Landscaping or mowing</option><option>Rule concern</option><option>Something else</option></select></div>
+     <div><label for="r-where">Where is it?</label><select id="r-where"><option>At my home</option><option>On my street</option><option>Common area or entrance</option><option>Somewhere else in the neighborhood</option></select></div>
+     <div><label for="r-desc">Tell us what you saw</label><textarea id="r-desc" rows="4" required placeholder="Example: The streetlight at the end of Kelly Ct has been out since Sunday."></textarea></div>
+     <div><label for="r-files">Add photos or documents (optional)</label><input id="r-files" type="file" accept="image/*,application/pdf" multiple><div class="previews" id="r-prev"></div></div>
+     <p class="note small">Only the board can see your report. You'll get an email each time they update it.</p>
+     <button type="submit">Send to the board</button>
+   </form>`,
+  b=>{
+    b.querySelector('#r-files').onchange=e=>previewFiles(e.target,b.querySelector('#r-prev'));
+    b.querySelector('#f-rep').onsubmit=e=>{e.preventDefault();
+      const id=nextIssue++;
+      issues.unshift({id,propId:p.id,type:b.querySelector('#r-type').value,where:b.querySelector('#r-where').value,desc:b.querySelector('#r-desc').value.trim(),status:'New',date:fmt(TODAY),files:b.querySelector('#r-files').files.length,updates:[]});
+      closeDrawer();renderAll();toast(`Sent. Report #${id} is with the board.`);
+    };
+  });
+}
+function issueBody(i){
+  const tl=[`<li><span class="date">${i.date}</span><br>Report sent from ${esc(byId(i.propId).address)}</li>`].concat(i.updates.map(u=>`<li><span class="date">${u.date} · ${esc(u.by)}</span><br>${esc(u.text)}</li>`));
+  return `<div class="row spread"><span class="muted">Report #${i.id} · ${i.date}</span><span class="pill ${ISTAT[i.status]}">${i.status}</span></div>
+   <div class="stack" style="gap:.4rem"><h3>${esc(i.type)}</h3><span class="muted small">${esc(i.where)}</span><p>${esc(i.desc)}</p></div>
+   ${i.files?`<div class="photos">${Array.from({length:i.files},(_,k)=>`<div class="ph">Attachment ${k+1}</div>`).join('')}</div>`:''}
+   <div class="stack"><h3>History</h3><ol class="timeline">${tl.join('')}</ol></div>`;
+}
+function openMyIssue(id){
+  const i=issues.find(x=>x.id===id);
+  openDrawer('My report',issueBody(i)+(i.status!=='Resolved'?`<form id="f-more" class="stack"><div><label for="mi-text">Add more information</label><textarea id="mi-text" rows="3"></textarea></div><button type="submit" class="ghost">Send to the board</button></form>`:''),
+  b=>{const f=b.querySelector('#f-more');if(f)f.onsubmit=e=>{e.preventDefault();const t=b.querySelector('#mi-text').value.trim();if(!t)return;i.updates.push({by:USERS[session.role].name,date:fmt(TODAY),text:t});openMyIssue(id);toast('Added to your report.')}});
+}
+function openAnn(id){const a=anns.find(x=>x.id===id);openDrawer('Announcement',`<span class="date">${a.date}</span>${a.important?'<span class="pill p-bad" style="justify-self:start">Important</span>':''}<h3 style="font-size:1.5rem">${esc(a.title)}</h3><p>${esc(a.body)}</p>`)}
+function openAllAnn(){const list=anns.filter(a=>session.role!=='visitor'||a.public);openDrawer('All announcements',`<ul class="list">${list.map(a=>`<li><button class="linkrow" data-act="ann" data-id="${a.id}"><span class="date">${a.date}</span><b>${esc(a.title)}</b></button></li>`).join('')}</ul>`)}
+function openEvents(){const up=events.slice().sort((a,b)=>a.d-b.d);openDrawer('Meetings & events',`<ul class="list">${up.map(e=>`<li><button class="linkrow" data-act="event" data-id="${e.id}"><span class="date">${fmtLong(e.d)}${e.time?' · '+e.time:''}</span><b>${esc(e.title)}</b><span class="muted small">${e.type}</span></button></li>`).join('')}</ul>`)}
+function openEvent(id){const e=events.find(x=>x.id===id);openDrawer(e.type==='Meeting'?'Meeting':'Event',`<span class="pill p-info" style="justify-self:start">${e.type}</span><h3 style="font-size:1.5rem">${esc(e.title)}</h3>
+  <dl class="kv"><dt>Date</dt><dd>${fmtLong(e.d)}</dd>${e.time?`<dt>Time</dt><dd>${e.time}</dd>`:''}${e.where?`<dt>Where</dt><dd>${esc(e.where)}</dd>`:''}</dl>
+  ${e.agenda.length?`<div class="stack"><h3>Agenda</h3><ol style="margin:0;padding-left:1.3rem">${e.agenda.map(a=>`<li>${esc(a)}</li>`).join('')}</ol></div>`:''}
+  <button class="ghost" id="ev-cal">Add to my calendar</button>`,b=>b.querySelector('#ev-cal').onclick=()=>toast('On the live site this adds the event to your phone or computer calendar.'))}
+function openDocs(cat){const list=docs.filter(d=>!cat||d.cat===cat);const cats=[...new Set(list.map(d=>d.cat))];
+  openDrawer(cat||'HOA documents',cats.map(c=>`<div class="stack"><h3>${c}</h3><div class="files">${list.filter(d=>d.cat===c).map(d=>`<button class="file" data-act="doc" data-id="${d.id}">${ICON.doc}${esc(d.title)}</button>`).join('')}</div></div>`).join(''))}
+function openDoc(id){const d=docs.find(x=>x.id===id);openDrawer(d.title,`<div class="ph" style="width:100%;aspect-ratio:8.5/11;font-size:1rem">${esc(d.title)}<br>PDF preview</div><p class="muted">${esc(d.cat)} · ${esc(d.date)}</p><p class="muted small">On the live site the PDF opens here and can be downloaded.</p>`)}
+
+/* ---------- board drawers ---------- */
+function openProperty(id){
+  const p=byId(id),its=issues.filter(i=>i.propId===p.id);
+  openDrawer(p.address,`
+   <div>${houseSVG(p,'big')}</div>
+   <div><label class="btn ghost small" for="pp-photo" style="display:inline-flex;margin:0">${p.photo?'Replace photo':'Upload a photo of this home'}</label><input id="pp-photo" type="file" accept="image/*" class="sr"></div>
+   <dl class="kv"><dt>Lot</dt><dd>${p.lot}</dd><dt>Parcel ID</dt><dd>${p.parcel}</dd><dt>City</dt><dd>West Milton, OH 45383</dd></dl>
+   <div><label for="pp-status">Home status</label><select id="pp-status">${[['occupied','Occupied'],['construction','Under construction'],['lot','Vacant lot']].map(([v,t])=>`<option value="${v}" ${p.status===v?'selected':''}>${t}</option>`).join('')}</select></div>
+   <div class="stack"><h3>Owners &amp; logins</h3><ul class="list">${p.owners.map(o=>`<li><span class="row spread"><b>${esc(o.name)}</b><span class="pill ${/Active/.test(o.login)?'p-ok':o.login==='Invite sent'?'p-info':'p-neutral'}">${esc(o.login)}</span></span><span class="muted small">${esc(o.email)}</span></li>`).join('')}</ul>
+   <form id="pp-inv" class="row" style="align-items:flex-end"><div class="grow"><label for="pp-email">Invite an owner to sign in</label><input id="pp-email" type="email" placeholder="name@example.com"></div><button type="submit" class="ghost small">Send invite</button></form></div>
+   <div class="stack"><h3>Dues</h3>
+     <dl class="kv num"><dt>Past-due balance</dt><dd>${money(bal(p))}</dd><dt>2027 dues</dt><dd>${{open:'Not paid yet',pending:'Pending',paid:'Paid'}[p.dues2027]}</dd>${p.lastReminder?`<dt>Last reminder</dt><dd>${p.lastReminder}</dd>`:''}</dl>
+     <ul class="list num">${p.ledger.map(l=>`<li><span class="row spread"><b>${l.year} dues · ${money(l.amount)}</b><span class="pill ${l.status==='Paid'?'p-ok':'p-warn'}">${l.status}</span></span><span class="date">${l.date} · ${esc(l.method)}</span></li>`).join('')||'<li class="muted">No payments yet.</li>'}</ul>
+     <button class="ghost" data-act="b-check" data-id="${p.id}">Record a check or cash payment</button></div>
+   <div class="stack"><h3>Reports from this address</h3>${its.length?`<ul class="list">${its.map(i=>`<li><button class="linkrow" data-act="b-issue" data-id="${i.id}"><span class="row spread"><b>#${i.id} ${esc(i.type)}</b><span class="pill ${ISTAT[i.status]}">${i.status}</span></span><span class="date">${i.date}</span></button></li>`).join('')}</ul>`:'<p class="muted">None.</p>'}</div>
+   <div><label for="pp-notes">Board notes (only board members see these)</label><textarea id="pp-notes" rows="3">${esc(p.notes)}</textarea></div>
+   <button id="pp-save">Save changes</button>`,
+  b=>{
+    b.querySelector('#pp-photo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{p.photo=r.result;logAct(`added a photo for ${p.address}`);renderAll();openProperty(p.id);toast('Photo saved.')};r.readAsDataURL(f)};
+    b.querySelector('#pp-inv').onsubmit=e=>{e.preventDefault();const em=b.querySelector('#pp-email').value.trim();if(!em)return;p.owners.push({name:em,email:em,login:'Invite sent'});logAct(`invited ${em} to ${p.address}`);openProperty(p.id);toast(`Invite sent to ${em}. They'll set a password and land on this home.`)};
+    b.querySelector('#pp-save').onclick=()=>{p.status=b.querySelector('#pp-status').value;p.notes=b.querySelector('#pp-notes').value;logAct(`updated ${p.address}`);closeDrawer();renderAll();toast('Saved.')};
+  });
+}
+function openBoardIssue(id){
+  const i=issues.find(x=>x.id===id),p=byId(i.propId);
+  openDrawer(`Report #${i.id}`,`
+   <button class="fromchip" data-act="b-prop" data-id="${p.id}">${houseSVG(p,'mini')}<span><span class="muted small">From ${ownerLine(p)}</span><br><b>${esc(p.address)}</b> · Lot ${p.lot}</span></button>
+   ${issueBody(i)}
+   <form id="f-bi" class="stack">
+     <div><label for="bi-status">Status</label><select id="bi-status">${Object.keys(ISTAT).map(s=>`<option ${s===i.status?'selected':''}>${s}</option>`).join('')}</select></div>
+     <div><label for="bi-msg">Message to the homeowner (emailed to them)</label><textarea id="bi-msg" rows="3" placeholder="Example: Thanks for letting us know. The village will fix the light this week."></textarea></div>
+     <button type="submit">Save and notify homeowner</button>
+   </form>`,
+  b=>b.querySelector('#f-bi').onsubmit=e=>{e.preventDefault();const s=b.querySelector('#bi-status').value,m=b.querySelector('#bi-msg').value.trim();
+    if(s===i.status&&!m){closeDrawer();return}
+    i.updates.push({by:'Board',date:fmt(TODAY),text:m||`Status changed to ${s}.`});i.status=s;logAct(`updated report #${i.id} (${s})`);closeDrawer();renderAll();toast('Saved. The homeowner was emailed.')});
+}
+function openCheck(id){
+  const def=id?byId(id):props.find(p=>bal(p)>0)||props[0];
+  openDrawer('Record a payment',`
+   <p class="muted">For checks, cash or money orders received by mail. Online payments record themselves.</p>
+   <form id="f-ck" class="stack">
+     <div><label for="ck-prop">Property</label><select id="ck-prop">${props.map(p=>`<option value="${p.id}" ${p.id===def.id?'selected':''}>${esc(p.address)} · Lot ${p.lot}${bal(p)>0?' · owes '+money0(bal(p)):''}</option>`).join('')}</select></div>
+     <div><label for="ck-for">Apply to</label><select id="ck-for"><option value="past">Past-due balance</option><option value="2027">2027 annual dues</option></select></div>
+     <div class="row"><div class="grow"><label for="ck-amt">Amount</label><input id="ck-amt" inputmode="decimal" value="${bal(def)||350}"></div><div class="grow"><label for="ck-meth">Method</label><select id="ck-meth"><option>Check</option><option>Cash</option><option>Money order</option></select></div></div>
+     <div class="row"><div class="grow"><label for="ck-no">Check number</label><input id="ck-no" placeholder="Example: 2051"></div><div class="grow"><label for="ck-date">Date received</label><input id="ck-date" type="date" value="${TODAY.toISOString().slice(0,10)}"></div></div>
+     <label class="check"><input type="checkbox" id="ck-email" checked> Email a receipt to the owners</label>
+     <button type="submit">Record payment</button>
+   </form>`,
+  b=>{
+    const sel=b.querySelector('#ck-prop'),amt=b.querySelector('#ck-amt'),forS=b.querySelector('#ck-for');
+    const sync=()=>{const p=byId(sel.value);forS.value=bal(p)>0?'past':'2027';amt.value=bal(p)||350};sel.onchange=sync;
+    b.querySelector('#f-ck').onsubmit=e=>{e.preventDefault();const p=byId(sel.value),a=parseFloat(amt.value)||0;if(a<=0)return;
+      const meth=b.querySelector('#ck-meth').value,no=b.querySelector('#ck-no').value.trim(),label=meth==='Check'&&no?`Check #${no}`:meth;
+      if(forS.value==='past'){let left=a;const x=Math.min(left,p.owed2026);p.owed2026-=x;left-=x;p.prior=Math.max(0,p.prior-left);p.ledger.unshift({year:2026,amount:a,date:fmt(TODAY),method:label,status:'Paid'})}
+      else{p.dues2027='paid';p.ledger.unshift({year:2027,amount:a,date:fmt(TODAY),method:label,status:'Paid'})}
+      logAct(`recorded ${label.toLowerCase()} (${money(a)}) for ${p.address}`);closeDrawer();renderAll();toast(`Recorded ${money(a)} for ${p.address}.`)};
+  });
+}
+function openRemind(){
+  const od=props.filter(p=>bal(p)-p.pending>0),open27=props.filter(p=>p.dues2027==='open'&&p.status==='occupied');
+  openDrawer('Send dues reminders',`
+   <div><label for="rm-who">Send to</label><select id="rm-who"><option value="od">Homes with a past-due balance (${od.length})</option><option value="27">Homes that haven't paid 2027 dues (${open27.length})</option></select></div>
+   <div><label for="rm-subj">Subject</label><input id="rm-subj" value="Your Stillwater Crossing HOA dues are past due"></div>
+   <div><label for="rm-body">Message</label><textarea id="rm-body" rows="8">Hello,
+
+Our records show a balance of {balance} for {address}. You can pay online at stillwatercrossingHOA.com by bank transfer or card, or mail a check to the HOA.
+
+If you've already paid, thank you, and please disregard this note.
+
+Stillwater Crossing HOA Board</textarea></div>
+   <p class="muted small">{balance} and {address} fill in for each home. Emails go to every owner with a login on that home.</p>
+   <button id="rm-send">Send to ${od.length} homes</button>`,
+  b=>{const who=b.querySelector('#rm-who'),btn=b.querySelector('#rm-send');
+    who.onchange=()=>{const n=who.value==='od'?od.length:open27.length;btn.textContent=`Send to ${n} homes`;b.querySelector('#rm-subj').value=who.value==='od'?'Your Stillwater Crossing HOA dues are past due':'Reminder: 2027 HOA dues are due March 1'};
+    btn.onclick=()=>{const list=who.value==='od'?od:open27;list.forEach(p=>p.lastReminder=fmt(TODAY));logAct(`sent dues reminders to ${list.length} homes`);closeDrawer();renderAll();toast(`Reminders queued for ${list.length} homes. (Prototype: no emails sent.)`)}});
+}
+function openPost(){
+  openDrawer('Post an announcement',`<form id="f-post" class="stack">
+   <div><label for="po-title">Headline</label><input id="po-title" required placeholder="Example: Snow plowing starts at 2 inches"></div>
+   <div><label for="po-body">Message</label><textarea id="po-body" rows="5" required></textarea></div>
+   <label class="check"><input type="checkbox" id="po-imp"> Mark as important</label>
+   <label class="check"><input type="checkbox" id="po-pub" checked> Also show on the public homepage</label>
+   <label class="check"><input type="checkbox" id="po-mail" checked> Email all homeowners</label>
+   <button type="submit">Publish</button></form>`,
+  b=>b.querySelector('#f-post').onsubmit=e=>{e.preventDefault();const t=b.querySelector('#po-title').value.trim();
+    anns.unshift({id:nextAnn++,date:fmt(TODAY),title:t,body:b.querySelector('#po-body').value.trim(),important:b.querySelector('#po-imp').checked,public:b.querySelector('#po-pub').checked});
+    logAct(`posted “${t}”`);closeDrawer();renderAll();toast(b.querySelector('#po-mail').checked?'Published. Email to all homeowners queued (prototype: not sent).':'Published.')});
+}
+function openProjUpdate(pid){
+  openDrawer('Add a project update',`<form id="f-pu" class="stack">
+   <div><label for="pu-proj">Project</label><select id="pu-proj">${projects.map(p=>`<option value="${p.id}" ${p.id===pid?'selected':''}>${esc(p.title)}</option>`).join('')}</select></div>
+   <div><label for="pu-status">Status</label><select id="pu-status">${Object.keys(PSTAT).map(s=>`<option>${s}</option>`).join('')}</select></div>
+   <div><label for="pu-text">What happened?</label><textarea id="pu-text" rows="4" required placeholder="Example: Developer confirmed paving crew for Nov 30."></textarea></div>
+   <div><label for="pu-next">Next planned action</label><input id="pu-next" placeholder="Example: Board walks the roads with the engineer Dec 2."></div>
+   <div><label for="pu-files">Photos or documents (optional)</label><input id="pu-files" type="file" multiple accept="image/*,application/pdf"><div class="previews" id="pu-prev"></div></div>
+   <label class="check"><input type="checkbox" id="pu-mail"> Email residents about this update</label>
+   <button type="submit">Post update</button></form>`,
+  b=>{const sel=b.querySelector('#pu-proj'),st=b.querySelector('#pu-status');const sync=()=>st.value=projects.find(p=>p.id===sel.value).status;sync();sel.onchange=sync;
+    b.querySelector('#pu-files').onchange=e=>previewFiles(e.target,b.querySelector('#pu-prev'));
+    b.querySelector('#f-pu').onsubmit=e=>{e.preventDefault();const p=projects.find(x=>x.id===sel.value),t=b.querySelector('#pu-text').value.trim(),n=b.querySelector('#pu-next').value.trim();
+      p.hist.unshift([fmt(TODAY),t]);p.latest=t;if(n)p.next=n;p.status=st.value;p.f=PF[p.status];[...b.querySelector('#pu-files').files].forEach(f=>p.photos.push(f.name));
+      logAct(`updated ${p.title}`);closeDrawer();renderAll();toast('Update posted.')}});
+}
+function openAddEvent(){
+  openDrawer('Add a meeting or event',`<form id="f-ev" class="stack">
+   <div><label for="ev-title">Name</label><input id="ev-title" required placeholder="Example: Spring yard sale"></div>
+   <div><label for="ev-type">Type</label><select id="ev-type"><option>Meeting</option><option>Community event</option><option>Reminder</option></select></div>
+   <div class="row"><div class="grow"><label for="ev-date">Date</label><input id="ev-date" type="date" required></div><div class="grow"><label for="ev-time">Time</label><input id="ev-time" type="time" value="19:00"></div></div>
+   <div><label for="ev-where">Location</label><input id="ev-where"></div>
+   <div><label for="ev-agenda">Agenda (one item per line)</label><textarea id="ev-agenda" rows="4"></textarea></div>
+   <label class="check"><input type="checkbox" id="ev-mail" checked> Email homeowners a reminder 3 days before</label>
+   <button type="submit">Add to calendar</button></form>`,
+  b=>b.querySelector('#f-ev').onsubmit=e=>{e.preventDefault();const [y,m,d]=b.querySelector('#ev-date').value.split('-').map(Number),tm=b.querySelector('#ev-time').value;
+    let time='';if(tm){const [h,mi]=tm.split(':').map(Number);time=`${(h%12)||12}:${String(mi).padStart(2,'0')} ${h<12?'AM':'PM'}`}
+    const t=b.querySelector('#ev-title').value.trim();
+    events.push({id:nextEvent++,d:new Date(y,m-1,d),time,where:b.querySelector('#ev-where').value.trim(),title:t,type:b.querySelector('#ev-type').value,agenda:b.querySelector('#ev-agenda').value.split('\n').map(s=>s.trim()).filter(Boolean)});
+    logAct(`added event “${t}”`);closeDrawer();renderAll();toast('Added to the community calendar.')});
+}
+function openUpload(){
+  openDrawer('Upload a document',`<form id="f-up" class="stack">
+   <div><label for="up-file">File</label><input id="up-file" type="file" required accept="application/pdf,.doc,.docx,image/*"></div>
+   <div><label for="up-title">Title</label><input id="up-title" required placeholder="Example: November 2026 Minutes"></div>
+   <div><label for="up-cat">Category</label><select id="up-cat"><option>Minutes</option><option>Bylaws &amp; rules</option><option>Budget &amp; finance</option><option>Forms</option></select></div>
+   <div><label for="up-vis">Who can see it?</label><select id="up-vis"><option>Signed-in homeowners</option><option>Board members only</option></select></div>
+   <button type="submit">Upload</button></form>`,
+  b=>{b.querySelector('#up-file').onchange=e=>{const f=e.target.files[0];if(f&&!b.querySelector('#up-title').value)b.querySelector('#up-title').value=f.name.replace(/\.[^.]+$/,'')};
+    b.querySelector('#f-up').onsubmit=e=>{e.preventDefault();const t=b.querySelector('#up-title').value.trim();docs.unshift({id:nextDoc++,title:t,cat:b.querySelector('#up-cat').value,date:TODAY.toLocaleDateString('en-US',{month:'short',year:'numeric'})});logAct(`uploaded “${t}”`);closeDrawer();renderAll();toast('Uploaded.')}});
+}
+function openAddProp(){
+  openDrawer('Add a property',`<form id="f-ap" class="stack">
+   <div class="row"><div style="flex:0 1 130px"><label for="ap-num">House no.</label><input id="ap-num" inputmode="numeric" required></div><div class="grow"><label for="ap-street">Street</label><select id="ap-street">${STREETS.map(s=>`<option>${s[0]}</option>`).join('')}</select></div></div>
+   <div class="row"><div class="grow"><label for="ap-lot">Lot</label><input id="ap-lot" inputmode="numeric" value="${props.length+1}"></div><div class="grow"><label for="ap-status">Status</label><select id="ap-status"><option value="occupied">Occupied</option><option value="construction">Under construction</option><option value="lot">Vacant lot</option></select></div></div>
+   <div><label for="ap-owner">Owner name</label><input id="ap-owner" placeholder="Leave blank if builder-owned"></div>
+   <div><label for="ap-email">Owner email (sends a sign-in invite)</label><input id="ap-email" type="email"></div>
+   <button type="submit">Add property</button></form>`,
+  b=>b.querySelector('#f-ap').onsubmit=e=>{e.preventDefault();const p=newProp(b.querySelector('#ap-num').value.trim(),b.querySelector('#ap-street').value,+b.querySelector('#ap-lot').value,b.querySelector('#ap-status').value,b.querySelector('#ap-owner').value.trim(),b.querySelector('#ap-email').value.trim());
+    logAct(`added ${p.address}`);closeDrawer();renderAll();toast(`Added ${p.address}.`)});
+}
+function newProp(num,street,lot,status,owner,email){
+  const p={id:Math.max(...props.map(x=>x.id))+1,lot:lot||props.length+1,num,street,address:`${num} ${street}`,status:status||'occupied',owners:[],siding:pick(SIDING),roof:pick(ROOF),garageLeft:R()<.5,photo:null,owed2026:0,prior:0,pending:0,dues2027:'open',lastReminder:'',ledger:[],notes:'',parcel:'—'};
+  p.owners.push(owner?{name:owner,email:email||'—',login:email?'Invite sent':'No login yet'}:{name:BUILDER,email:'builder@example.com',login:'Builder account'});
+  props.push(p);return p;
+}
+function openImport(){
+  openDrawer('Import the property list',`
+   <p>Start from a spreadsheet of every address in the neighborhood. The county auditor's site lists each parcel with its address and owner, and the developer's plat shows lot numbers.</p>
+   <div class="note small">Save the spreadsheet as CSV with these columns: <b>address, lot, owner, email, status</b>. Status is occupied, construction or lot.</div>
+   <div><label for="im-file">Choose a CSV file</label><input id="im-file" type="file" accept=".csv,text/csv"></div>
+   <div><label for="im-text">Or paste rows here</label><textarea id="im-text" rows="6">address,lot,owner,email,status
+1025 Heather Pl,201,Jordan Example,j.example@example.com,occupied
+1027 Heather Pl,202,,,construction</textarea></div>
+   <button id="im-go">Import rows</button>`,
+  b=>{b.querySelector('#im-file').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>b.querySelector('#im-text').value=r.result;r.readAsText(f)};
+    b.querySelector('#im-go').onclick=()=>{let n=0;b.querySelector('#im-text').value.split(/\r?\n/).forEach(line=>{const c=line.split(',').map(s=>s.trim());if(!c[0]||/^address$/i.test(c[0]))return;const m=c[0].match(/^(\S+)\s+(.+)$/);if(!m)return;newProp(m[1],m[2],+c[1],['occupied','construction','lot'].includes((c[4]||'').toLowerCase())?c[4].toLowerCase():'occupied',c[2],c[3]);n++});
+      logAct(`imported ${n} properties`);closeDrawer();renderAll();toast(`Imported ${n} ${n===1?'property':'properties'}.`)}});
+}
+
+/* ---------- renderers ---------- */
+function locked(title,text,btn=true){return `<div class="card stack lockcard"><p class="eyebrow">Members only</p><h1>${title}</h1><p class="lede">${text}</p>${btn?'<div class="row"><button data-act="signin">Sign in</button></div>':''}<p class="muted">New to Stillwater Crossing? Email the board and we'll send you an invite. Every login is linked to your home's address.</p></div>`}
+function renderChrome(){
+  document.querySelectorAll('[data-act="viewas"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.r===session.role));
+  const tabs=[['home','Home'],['dashboard','My Home'],['projects','Projects']].concat(session.role==='board'?[['board','Board']]:[]);
+  const v=currentView();
+  $('#nav').innerHTML=tabs.map(([k,t])=>`<a href="#${k}" ${k===v?'aria-current="page"':''}>${t}</a>`).join('');
+  if(session.role==='visitor')$('#acct').innerHTML='<button class="small" data-act="signin">Sign in</button>';
+  else{const u=USERS[session.role];$('#acct').innerHTML=`<div class="acct"><span><b>${u.name}</b><small>${session.role==='board'?u.title:esc(myProp().address)}</small></span><button class="textbtn" data-act="signout">Sign out</button></div>`}
+  $('#heroBtns').innerHTML=session.role==='visitor'?'<button data-act="signin">Homeowner sign in</button><a class="btn ghost" href="#projects">See community projects</a>':'<a class="btn" href="#dashboard">Go to my home</a><a class="btn ghost" href="#projects">See community projects</a>';
+  $('#homeNews').innerHTML=anns.filter(a=>a.public).slice(0,3).map(a=>`<li><button class="linkrow" data-act="ann" data-id="${a.id}"><span class="date">${a.date}</span><b>${esc(a.title)}</b><span class="muted">${esc(a.body.length>110?a.body.slice(0,107)+'…':a.body)}</span></button></li>`).join('');
+}
+function renderDash(){
+  const el=$('#v-dashboard');
+  if(session.role==='visitor'){el.innerHTML=locked('Sign in to see your home','Your dues, reports and HOA documents are linked to your address. Sign in with the email the board has on file.');return}
+  const p=myProp(),u=USERS[session.role],due=amountDue(p),mine=issues.filter(i=>i.propId===p.id);
+  const last=p.ledger.find(l=>l.status==='Paid');
+  const dp=bal(p)-p.pending>0?'<span class="pill p-bad">Past due</span>':p.dues2027==='open'?'<span class="pill p-info">2027 dues open</span>':p.dues2027==='pending'?'<span class="pill p-warn">Payment pending</span>':'<span class="pill p-ok">Paid in full</span>';
+  const up=events.filter(e=>e.d>=new Date(TODAY.getFullYear(),TODAY.getMonth(),TODAY.getDate())).sort((a,b)=>a.d-b.d).slice(0,3);
+  el.innerHTML=`
+  <div class="card myhome">
+    <div>${houseSVG(p,'thumb')}</div>
+    <div class="stack min0"><p class="eyebrow">My Home · Lot ${p.lot}</p><h1>${greet()}, ${u.short}.</h1><p class="lede">${esc(p.address)}, West Milton, OH 45383</p><p class="muted">On this account: ${ownerLine(p)}. Something wrong? <button class="textbtn" data-act="report">Tell the board</button></p></div>
+  </div>
+  <div class="grid2">
+    <div class="card tile stack">
+      <h2><span class="ico">${ICON.mega}</span>Community Announcements</h2>
+      <ul class="list">${anns.slice(0,3).map(a=>`<li><button class="linkrow" data-act="ann" data-id="${a.id}"><span class="row">${a.important?'<span class="pill p-bad">Important</span>':''}<span class="date">${a.date}</span></span><b>${esc(a.title)}</b></button></li>`).join('')}</ul>
+      <button class="ghost" data-act="allann">See all announcements</button>
+    </div>
+    <div class="card tile stack">
+      <h2><span class="ico">${ICON.card}</span>My HOA Dues</h2>
+      <div class="row"><span class="dues-amt num">${money(due)}</span>${dp}</div>
+      <dl class="kv num"><dt>Annual dues</dt><dd>$350.00</dd><dt>Next due date</dt><dd>March 1, 2027</dd><dt>Last payment</dt><dd>${last?`${last.date} · ${esc(last.method)}`:'None yet'}</dd></dl>
+      ${due>0?'<button data-act="pay">Pay Now</button>':'<button disabled>Nothing due right now</button>'}
+      <details><summary>Payment history &amp; receipts</summary><ul class="list num">${p.ledger.map((l,i)=>`<li><span class="row spread"><b>${l.year} dues · ${money(l.amount)}</b>${l.status==='Paid'?`<button class="textbtn" data-act="receipt" data-i="${i}">Receipt</button>`:'<span class="pill p-warn">Pending</span>'}</span><span class="date">${l.date} · ${esc(l.method)}</span></li>`).join('')}</ul></details>
+    </div>
+    <div class="card tile stack">
+      <h2><span class="ico">${ICON.warn}</span>Report an Issue</h2>
+      <p class="muted">Streetlight out, a pothole, a rule problem? Send it to the board. It's linked to your home, and only the board can see it.</p>
+      <button data-act="report">Report an issue</button>
+      <div class="stack"><b>My reports</b>${mine.length?`<ul class="list">${mine.map(i=>`<li><button class="linkrow" data-act="myissue" data-id="${i.id}"><span class="row spread"><span>#${i.id} ${esc(i.type)}</span><span class="pill ${ISTAT[i.status]}">${i.status}</span></span><span class="date">${i.date}${i.updates.length?' · latest: '+esc(i.updates[i.updates.length-1].text.slice(0,60))+(i.updates[i.updates.length-1].text.length>60?'…':''):''}</span></button></li>`).join('')}</ul>`:'<p class="muted">You haven\'t sent any reports.</p>'}</div>
+    </div>
+    <div class="card tile stack">
+      <h2><span class="ico">${ICON.cal}</span>Events &amp; Meetings</h2>
+      <ul class="list">${up.map(e=>`<li><button class="linkrow" data-act="event" data-id="${e.id}"><span class="date">${fmtLong(e.d)}${e.time?' · '+e.time:''}</span><b>${esc(e.title)}</b>${e.agenda.length?'<span class="muted small">Agenda posted</span>':''}</button></li>`).join('')}</ul>
+      <div class="row"><button class="ghost" data-act="events">Full calendar</button><button class="ghost" data-act="docs" data-cat="Minutes">Meeting minutes</button></div>
+    </div>
+  </div>
+  <div class="card stack"><div class="row spread"><h2>Documents</h2><button class="textbtn" data-act="docs">See all</button></div><div class="files">${docs.slice(0,6).map(d=>`<button class="file" data-act="doc" data-id="${d.id}">${ICON.doc}${esc(d.title)}</button>`).join('')}</div></div>`;
+}
+function renderProjects(){
+  const el=$('#v-projects'),board=session.role==='board';
+  const n=f=>projects.filter(p=>f==='all'||p.f===f).length;
+  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Community Projects</p><h1>What's being worked on</h1></div>${board?'<button data-act="b-proj">Add an update</button>':''}</div>
+  <p class="lede">Every update is dated and posted by a board member, so you can see exactly where things stand.</p>
+  <div class="filters" role="group" aria-label="Filter by status">${[['all','All'],['progress','In Progress'],['developer','Awaiting Developer'],['done','Completed']].map(([k,t])=>`<button data-act="pfilt" data-f="${k}" aria-pressed="${projFilter===k}">${t} (${n(k)})</button>`).join('')}</div>
+  <div class="stack">${projects.filter(p=>projFilter==='all'||p.f===projFilter).map(p=>`
   <article class="card proj">
-    <div class="proj-head"><div class="stack min0" style="gap:.3rem"><span class="muted">${p.cat}</span><h2>${p.title}</h2></div><span class="pill ${p.cls}">${p.status}</span></div>
-    <p><b>Latest update:</b> ${p.latest}</p>
-    <div class="next"><b>Next step:</b> ${p.next}</div>
-    <details><summary>Full history (${p.hist.length} updates)</summary>
-      <ol class="timeline">${p.hist.map(h=>`<li><span class="date">${h[0]}</span><br>${h[1]}</li>`).join('')}</ol>
-    </details>
-    ${p.photos.length?`<div class="photos">${p.photos.map(x=>`<div class="ph">${x}</div>`).join('')}</div>`:''}
-    ${p.files.length?`<div class="files">${p.files.map(x=>`<span class="file">📄 ${x}</span>`).join('')}</div>`:''}
-  </article>`).join('');
+    <div class="proj-head"><div class="stack min0" style="gap:.3rem"><span class="muted">${esc(p.cat)}</span><h2>${esc(p.title)}</h2></div><span class="pill ${PSTAT[p.status]}">${p.status}</span></div>
+    <p><b>Latest update:</b> ${esc(p.latest)}</p>
+    <div class="next"><b>Next step:</b> ${esc(p.next)}</div>
+    <details><summary>Full history (${p.hist.length} updates)</summary><ol class="timeline">${p.hist.map(h=>`<li><span class="date">${h[0]}</span><br>${esc(h[1])}</li>`).join('')}</ol></details>
+    ${p.photos.length?`<div class="photos">${p.photos.map(x=>`<div class="ph">${esc(x)}</div>`).join('')}</div>`:''}
+    ${p.files.length?`<div class="files">${p.files.map(x=>`<span class="file">${ICON.doc}${esc(x)}</span>`).join('')}</div>`:''}
+    ${board?`<div><button class="ghost small" data-act="b-proj" data-id="${p.id}">Add update to this project</button></div>`:''}
+  </article>`).join('')}</div>`;
 }
-renderProjects('all');
-document.getElementById('filters').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  document.querySelectorAll('#filters button').forEach(x=>x.setAttribute('aria-pressed',x===b));
-  renderProjects(b.dataset.f);
-});
-const budget=[['Landscaping & mowing',28000,24100],['Snow removal',9000,3200],['Streetlights & utilities',7500,6900],['Insurance',4200,4200],['Pond & common areas',6000,5450],['Reserve fund',12000,12000]];
-document.getElementById('budget').innerHTML=budget.map(([n,b,a])=>`
-  <div style="display:grid;gap:.3rem"><div class="row" style="justify-content:space-between"><span>${n}</span><span class="muted">$${a.toLocaleString()} of $${b.toLocaleString()}</span></div>
-  <div class="bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div></div>`).join('');
-document.getElementById('payBtn').addEventListener('click',()=>{document.getElementById('payOpts').hidden=false;document.getElementById('payBtn').hidden=true});
-document.getElementById('issueForm').addEventListener('submit',e=>{e.preventDefault();document.getElementById('issueToast').hidden=false});
-const views=['home','dashboard','projects','board'];
-function route(){
-  const v=views.includes(location.hash.slice(1))?location.hash.slice(1):'home';
-  views.forEach(n=>document.getElementById('v-'+n).hidden=n!==v);
-  document.querySelectorAll('nav.tabs a').forEach(a=>{if(a.getAttribute('href')==='#'+v)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
-  window.scrollTo(0,0);
+function renderBoard(){
+  const el=$('#v-board');
+  if(session.role!=='board'){el.innerHTML=locked('Board members only','This area is for board members. Sign in with a board account to manage the neighborhood.',session.role==='visitor');return}
+  const openIss=issues.filter(i=>i.status!=='Resolved');
+  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Board Administration</p><h1>Board dashboard</h1></div><div class="lock">${ICON.lock}Karen Patel · Treasurer · 2-step verified</div></div>
+  <div class="seg" role="group" aria-label="Board sections">${[['overview','Overview'],['properties',`Properties (${props.length})`],['issues',`Reports (${openIss.length} open)`]].map(([k,t])=>`<button data-act="b-tab" data-t="${k}" aria-pressed="${boardTab===k}">${t}</button>`).join('')}</div>
+  <div id="boardBody" class="stack" style="gap:2rem"></div>`;
+  const body=$('#boardBody');
+  if(boardTab==='overview')body.innerHTML=boardOverview();
+  if(boardTab==='properties'){body.innerHTML=boardProps();wireProps()}
+  if(boardTab==='issues')body.innerHTML=boardIssues();
 }
-addEventListener('hashchange',route);route();
+function boardOverview(){
+  const paid=props.filter(p=>p.owed2026===0).length,collected=props.reduce((s,p)=>s+350-p.owed2026,0),od=props.filter(p=>bal(p)>0).sort((a,b)=>bal(b)-bal(a)),out=od.reduce((s,p)=>s+bal(p),0);
+  const openIss=issues.filter(i=>i.status!=='Resolved'),newIss=issues.filter(i=>i.status==='New').length,early=props.filter(p=>p.dues2027!=='open').length;
+  const budget=[['Landscaping & mowing',28000,24100],['Snow removal',9000,3200],['Streetlights & utilities',7500,6900],['Insurance',4200,4200],['Common area upkeep',6000,5450],['Reserve fund',12000,12000]];
+  return `<div class="kpis">
+    <div class="card kpi"><span class="muted">2026 dues collected</span><b>${money0(collected)}</b><div class="bar"><i style="width:${(paid/props.length*100).toFixed(1)}%"></i></div><span class="muted num">${paid} of ${props.length} homes · ${(paid/props.length*100).toFixed(1)}%</span></div>
+    <div class="card kpi"><span class="muted">Past-due homes</span><b style="color:var(--bad)">${od.length}</b><span class="muted num">${money0(out)} outstanding</span></div>
+    <div class="card kpi"><span class="muted">Open reports</span><b>${openIss.length}</b><span class="muted">${newIss} new</span></div>
+    <div class="card kpi"><span class="muted">2027 dues paid early</span><b>${early}</b><span class="muted">Due March 1, 2027</span></div>
+  </div>
+  <div class="card stack"><h2>Quick actions</h2><div class="admin-actions">
+    <button data-act="b-post">${ICON.plus}Post announcement</button><button data-act="b-proj">${ICON.plus}Add project update</button><button data-act="b-event">${ICON.plus}Add meeting or event</button>
+    <button data-act="b-upload">${ICON.up}Upload minutes or document</button><button data-act="b-remind">${ICON.mail}Send dues reminders</button><button data-act="b-check">${ICON.check}Record a check payment</button>
+  </div></div>
+  <div class="grid2">
+    <div class="card stack min0"><div class="row spread"><h2>Past-due homes</h2><button class="ghost small" data-act="b-remind">Remind all ${od.length}</button></div>
+      <div class="tablewrap"><table><thead><tr><th>Address</th><th>Lot</th><th>Owed</th><th>Days late</th><th>Last reminder</th></tr></thead><tbody>
+      ${od.slice(0,6).map(p=>`<tr><td><button class="textbtn" data-act="b-prop" data-id="${p.id}">${esc(p.address)}</button></td><td>${p.lot}</td><td>${money0(bal(p))}</td><td><span class="pill ${daysLate(p)>365?'p-bad':'p-warn'}">${daysLate(p)}</span></td><td>${p.lastReminder||'—'}</td></tr>`).join('')}
+      </tbody></table></div>
+      <button class="textbtn" style="justify-self:start" data-act="b-tab" data-t="properties" data-f="overdue">View all ${od.length} past-due homes</button></div>
+    <div class="card stack min0"><div class="row spread"><h2>Reports to review</h2><button class="textbtn" data-act="b-tab" data-t="issues">See all</button></div>
+      <ul class="list">${openIss.slice(0,5).map(i=>`<li><button class="linkrow" data-act="b-issue" data-id="${i.id}"><span class="row spread"><b>#${i.id} ${esc(i.type)}</b><span class="pill ${ISTAT[i.status]}">${i.status}</span></span><span class="date">${i.date} · ${esc(byId(i.propId).address)}${i.files?` · ${i.files} attachment${i.files>1?'s':''}`:''}</span></button></li>`).join('')}</ul></div>
+  </div>
+  <div class="grid2">
+    <div class="card stack"><h2>2026 budget vs. actual</h2><div class="stack num">${budget.map(([n,b,a])=>`<div style="display:grid;gap:.3rem"><div class="row spread"><span>${n}</span><span class="muted">${money0(a)} of ${money0(b)}</span></div><div class="bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div></div>`).join('')}</div></div>
+    <div class="card stack"><h2>Activity log</h2><p class="muted small">Every board change is recorded with who made it.</p><ul class="list">${activity.slice(0,7).map(a=>`<li><span class="date">${esc(a.when)}</span><span><b>${esc(a.who)}</b> ${esc(a.what)}</span></li>`).join('')}</ul></div>
+  </div>`;
+}
+function propMatches(p){
+  const q=propFilter.q.trim().toLowerCase();
+  if(q&&!(`${p.address} lot ${p.lot} ${p.owners.map(o=>o.name+' '+o.email).join(' ')}`.toLowerCase().includes(q)))return false;
+  if(propFilter.street&&p.street!==propFilter.street)return false;
+  const s=propFilter.status;
+  if(s==='overdue')return bal(p)>0;
+  if(s==='nologin')return p.status==='occupied'&&!p.owners.some(o=>/Active/.test(o.login));
+  if(s==='nophoto')return !p.photo;
+  return s==='all'||p.status===s;
+}
+function boardProps(){
+  const c=k=>props.filter(p=>k==='overdue'?bal(p)>0:k==='nologin'?p.status==='occupied'&&!p.owners.some(o=>/Active/.test(o.login)):k==='nophoto'?!p.photo:k==='all'||p.status===k).length;
+  return `<div class="row spread"><p class="lede" style="font-size:1.05rem">Every home has a profile. Dues are billed to the home, and each owner's login is linked to it, so reports and payments always know which address they came from.</p>
+    <div class="row"><button class="ghost small" data-act="b-addprop">Add a property</button><button class="ghost small" data-act="b-import">Import list</button></div></div>
+  <div class="toolbar"><div class="grow"><label for="pq">Search</label><input id="pq" type="search" placeholder="Address, lot or owner" value="${esc(propFilter.q)}"></div>
+    <div><label for="pstreet">Street</label><select id="pstreet"><option value="">All streets</option>${STREETS.map(s=>`<option ${propFilter.street===s[0]?'selected':''}>${s[0]}</option>`).join('')}</select></div></div>
+  <div class="filters" role="group" aria-label="Filter properties">${[['all','All'],['occupied','Occupied'],['construction','Under construction'],['lot','Vacant lots'],['overdue','Past due'],['nologin','No login yet'],['nophoto','Needs photo']].map(([k,t])=>`<button data-act="b-pfilter" data-f="${k}" aria-pressed="${propFilter.status===k}">${t} (${c(k)})</button>`).join('')}</div>
+  <p class="muted" id="pcount"></p>
+  <div class="pgrid" id="pgrid"></div>`;
+}
+function renderPropGrid(){
+  const list=props.filter(propMatches);
+  $('#pcount').textContent=`Showing ${list.length} of ${props.length} properties`;
+  $('#pgrid').innerHTML=list.length?list.map(p=>`<button class="pcard" data-act="b-prop" data-id="${p.id}">${houseSVG(p,'thumb')}<b>${esc(p.address)}</b><span class="meta"><span>Lot ${p.lot} · ${esc(p.owners[0]?.name===BUILDER?'Builder':(p.owners[0]?.name||'').split(' ').slice(-1)[0])}</span>${p.status==='occupied'?duesPill(p):statusPill(p)}</span></button>`).join(''):'<p class="muted">No properties match. Try clearing the search.</p>';
+}
+function wireProps(){
+  $('#pq').oninput=e=>{propFilter.q=e.target.value;renderPropGrid()};
+  $('#pstreet').onchange=e=>{propFilter.street=e.target.value;renderPropGrid()};
+  renderPropGrid();
+}
+function boardIssues(){
+  const list=issues.filter(i=>issueFilter==='all'||(issueFilter==='open'?i.status!=='Resolved':i.status==='Resolved'));
+  return `<div class="filters" role="group" aria-label="Filter reports">${[['open','Open'],['resolved','Resolved'],['all','All']].map(([k,t])=>`<button data-act="b-ifilter" data-f="${k}" aria-pressed="${issueFilter===k}">${t}</button>`).join('')}</div>
+  <div class="card"><ul class="list">${list.map(i=>{const p=byId(i.propId);return `<li><button class="linkrow" data-act="b-issue" data-id="${i.id}"><span class="row spread"><b>#${i.id} ${esc(i.type)}</b><span class="pill ${ISTAT[i.status]}">${i.status}</span></span><span>${esc(i.desc.length>110?i.desc.slice(0,107)+'…':i.desc)}</span><span class="date">${i.date} · ${esc(p.address)} · ${ownerLine(p)}</span></button></li>`}).join('')||'<li class="muted">No reports here.</li>'}</ul></div>`;
+}
+
+/* ---------- routing + actions ---------- */
+const VIEWS=['home','dashboard','projects','board'];
+function currentView(){const h=location.hash.slice(1);return VIEWS.includes(h)?h:'home'}
+function showView(){const v=currentView();VIEWS.forEach(n=>$('#v-'+n).hidden=n!==v)}
+function renderAll(){renderChrome();renderDash();renderProjects();renderBoard();showView()}
+addEventListener('hashchange',()=>{renderChrome();showView();scrollTo(0,0)});
+const ACT={
+  signin:()=>openSignIn(),
+  signout:()=>{session={role:'visitor'};renderAll();toast('Signed out.')},
+  viewas:d=>{session={role:d.r};closeDrawer();renderAll()},
+  pay:()=>need('Sign in to pay your dues. Payments are linked to your home.',openPay),
+  report:()=>need('Sign in to report an issue. Reports are linked to your home.',openReport),
+  events:openEvents, event:d=>openEvent(+d.id), ann:d=>openAnn(+d.id), allann:openAllAnn,
+  docs:d=>need('Sign in to see HOA documents.',()=>openDocs(d.cat)), doc:d=>openDoc(+d.id),
+  receipt:d=>openReceipt(+d.i), myissue:d=>openMyIssue(+d.id),
+  pfilt:d=>{projFilter=d.f;renderProjects()},
+  'b-tab':d=>{boardTab=d.t;if(d.f)propFilter={q:'',street:'',status:d.f};closeDrawer();renderBoard();scrollTo(0,0)},
+  'b-pfilter':d=>{propFilter.status=d.f;renderBoard()},
+  'b-ifilter':d=>{issueFilter=d.f;renderBoard()},
+  'b-prop':d=>openProperty(+d.id),'b-issue':d=>openBoardIssue(+d.id),
+  'b-post':openPost,'b-proj':d=>openProjUpdate(d.id),'b-event':openAddEvent,'b-upload':openUpload,'b-remind':openRemind,'b-check':d=>openCheck(d.id?+d.id:null),'b-addprop':openAddProp,'b-import':openImport
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el.dataset)}});
+renderAll();
 </script>
 
 </body>
