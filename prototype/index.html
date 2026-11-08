@@ -178,6 +178,7 @@ button.pcard:hover{border-color:var(--green)}
 .drawer-head .x{background:transparent;color:var(--ink);border:2px solid var(--line);min-height:48px;min-width:48px;padding:0;flex:none}
 .drawer-body{overflow-y:auto;padding-block:1.25rem calc(2rem + env(safe-area-inset-bottom,0px));padding-left:1.25rem;padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:1.1rem;align-content:start;flex:1}
 .receipt{border:2px dashed var(--line);border-radius:10px;padding:1.2rem;display:grid;gap:.8rem}
+.receipt td:last-child,.receipt td:first-child{white-space:nowrap}
 .stamp{justify-self:start;border:3px solid var(--ok);color:var(--ok);font-weight:700;padding:.15rem .8rem;border-radius:6px;letter-spacing:.12em;transform:rotate(-4deg)}
 .checkout{border:2px solid var(--line);border-radius:10px;padding:1.2rem;display:grid;gap:.8rem;background:var(--bg)}
 .lockline{display:flex;gap:.5rem;align-items:center;color:var(--muted);font-size:.92rem}
@@ -379,7 +380,21 @@ const activity=[
  {when:'Nov 4, 8:02 PM',who:'K. Patel',what:'updated Neighborhood road repairs'},
  {when:'Nov 2, 10:45 AM',who:'J. Lin',what:'replied to report #1031'}
 ];
-const logAct=what=>activity.unshift({when:TODAY.toLocaleDateString('en-US',{month:'short',day:'numeric'})+', '+TODAY.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),who:'K. Patel',what});
+const logAct=(what,by='K. Patel')=>activity.unshift({when:TODAY.toLocaleDateString('en-US',{month:'short',day:'numeric'})+', '+TODAY.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),who:by,what});
+
+const accessReqs=[
+ {id:1,name:'Jordan Ellis',email:'j.ellis@example.com',phone:'(937) 555-0142',address:'715 Whitney Wy',relation:'owner',message:'We closed on the house in October and didn\'t get a letter.',date:'Nov 6, 2026',status:'pending'},
+ {id:2,name:'Priya Nair',email:'p.nair@example.com',phone:'',address:'Kelly Ct (renting)',relation:'resident',message:'Renting from the owner until next summer.',date:'Nov 7, 2026',status:'pending'}];
+const sales=[{id:1,propId:occOn('Joyce Ln',2),status:'reported',source:'seller',expected:'Dec 15, 2026',title:'',note:'Listed with an agent. Closing expected mid-December.',date:'Nov 3, 2026'}];
+const claimCodes={};let codeBatch=null;
+const normCode=c=>String(c).toUpperCase().replace(/[^A-Z0-9]/g,'');
+function makeCode(){const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789',b=new Uint8Array(8);crypto.getRandomValues(b);return [...b].map(x=>A[x%A.length]).join('')}
+const showCode=c=>c.slice(0,4)+'-'+c.slice(4);
+const demoClaim=props.find(p=>p.status==='occupied'&&p.owners.every(o=>o.login==='No login yet'))||props.find(p=>p.status==='construction');
+claimCodes.DEMO2026={propId:demoClaim.id,exp:'Feb 1, 2027',used:false};
+const openSale=id=>sales.find(s=>s.propId===id&&(s.status==='reported'||s.status==='scheduled'));
+const pendingAccess=()=>accessReqs.filter(r=>r.status==='pending').length;
+const relLabel=o=>o.name===BUILDER?'Builder':o.rel==='resident'?'Renter':'Owner';
 
 /* ---------- state ---------- */
 let session={role:'visitor'},pendingThen=null;
@@ -439,12 +454,13 @@ function openSignIn(reason,then){
      <button type="submit">Sign in</button>
      <button type="button" class="textbtn" id="in-forgot" style="justify-self:start">Forgot your password?</button>
    </form>
+   <div class="stack"><button type="button" class="ghost" id="in-claim">First time? Use the code from your letter</button><button type="button" class="textbtn" id="in-req" style="justify-self:start">No letter? Request access</button></div>
    <div class="divider">Prototype shortcuts</div>
    <div class="stack"><button type="button" class="ghost" data-demo="homeowner">Sign in as Margaret (homeowner, Lot 84)</button><button type="button" class="ghost" data-demo="board">Sign in as Karen (board treasurer)</button></div>
    <p class="muted small">Each login is linked to one home in the property list. Board members also enter a 6-digit code from an authenticator app.</p>`,
   b=>{
     b.querySelector('#f-in').onsubmit=e=>{e.preventDefault();/patel|board/i.test(b.querySelector('#in-email').value)?mfa():finishSignIn('homeowner')};
-    b.querySelector('#in-forgot').onclick=forgot;
+    b.querySelector('#in-forgot').onclick=forgot;b.querySelector('#in-claim').onclick=openClaim;b.querySelector('#in-req').onclick=openRequestAccess;
     b.querySelectorAll('[data-demo]').forEach(x=>x.onclick=()=>x.dataset.demo==='board'?mfa():finishSignIn('homeowner'));
   });
 }
@@ -555,8 +571,11 @@ function openProperty(id){
    <div><label class="btn ghost small" for="pp-photo" style="display:inline-flex;margin:0">${p.photo?'Replace photo':'Upload a photo of this home'}</label><input id="pp-photo" type="file" accept="image/*" class="sr"></div>
    <dl class="kv"><dt>Lot</dt><dd>${p.lot}</dd><dt>Parcel ID</dt><dd>${p.parcel}</dd><dt>City</dt><dd>West Milton, OH 45383</dd></dl>
    <div><label for="pp-status">Home status</label><select id="pp-status">${[['occupied','Occupied'],['construction','Under construction'],['lot','Vacant lot']].map(([v,t])=>`<option value="${v}" ${p.status===v?'selected':''}>${t}</option>`).join('')}</select></div>
-   <div class="stack"><h3>Owners &amp; logins</h3><ul class="list">${p.owners.map(o=>`<li><span class="row spread"><b>${esc(o.name)}</b><span class="pill ${/Active/.test(o.login)?'p-ok':o.login==='Invite sent'?'p-info':'p-neutral'}">${esc(o.login)}</span></span><span class="muted small">${esc(o.email)}</span></li>`).join('')}</ul>
-   <form id="pp-inv" class="row" style="align-items:flex-end"><div class="grow"><label for="pp-email">Invite an owner to sign in</label><input id="pp-email" type="email" placeholder="name@example.com"></div><button type="submit" class="ghost small">Send invite</button></form></div>
+   <div class="stack"><h3>Owners &amp; logins</h3><ul class="list">${p.owners.map(o=>`<li><span class="row spread"><b>${esc(o.name)}</b><span class="pill ${/Active/.test(o.login)?'p-ok':o.login==='Invite sent'?'p-info':'p-neutral'}">${esc(o.login)}</span></span><span class="muted small">${relLabel(o)} · ${esc(o.email)}</span></li>`).join('')||'<li class="muted">No one linked yet.</li>'}</ul>
+   <form id="pp-inv" class="row" style="align-items:flex-end"><div class="grow"><label for="pp-email">Invite someone to sign in</label><input id="pp-email" type="email" placeholder="name@example.com"></div><div><label for="pp-rel">As</label><select id="pp-rel"><option value="owner">Owner</option><option value="resident">Renter</option></select></div><button type="submit" class="ghost small">Send invite</button></form></div>
+   ${(()=>{const s=openSale(p.id);return s?`<div class="note stack" style="gap:.35rem"><b>${s.status==='scheduled'?'Sale closing '+s.closing:'The seller says they are selling'}</b><span class="small">${s.status==='scheduled'?`New owner: ${esc(s.buyer||'not entered yet')}${s.email?' · their invite goes out on closing day':''}`:`Reported ${s.date}${s.expected?' · expects to close '+esc(s.expected):''}${s.note?' · '+esc(s.note):''}`}</span><button class="textbtn" data-act="b-cancelsale" data-id="${s.id}" style="justify-self:start">Cancel this sale</button></div>`:''})()}
+   ${(p.past||[]).length?`<div class="stack"><h3>Past owners</h3><ul class="list">${p.past.map(o=>`<li><b>${esc(o.name)}</b><span class="muted small">${o.rel==='resident'?'Renter':'Owner'} until ${o.until} · no longer has access</span></li>`).join('')}</ul></div>`:''}
+   <div class="row"><button class="ghost small" data-act="b-sold" data-id="${p.id}">Mark as sold</button><button class="ghost small" data-act="b-stmt" data-id="${p.id}">Account statement</button></div>
    <div class="stack"><h3>Dues</h3>
      <dl class="kv num"><dt>Past-due balance</dt><dd>${money(bal(p))}</dd><dt>2027 dues</dt><dd>${{open:'Not paid yet',pending:'Pending',paid:'Paid'}[p.dues2027]}</dd>${p.lastReminder?`<dt>Last reminder</dt><dd>${p.lastReminder}</dd>`:''}</dl>
      <ul class="list num">${p.ledger.map(l=>`<li><span class="row spread"><b>${l.year} dues · ${money(l.amount)}</b><span class="pill ${l.status==='Paid'?'p-ok':'p-warn'}">${l.status}</span></span><span class="date">${l.date} · ${esc(l.method)}</span></li>`).join('')||'<li class="muted">No payments yet.</li>'}</ul>
@@ -566,7 +585,7 @@ function openProperty(id){
    <button id="pp-save">Save changes</button>`,
   b=>{
     b.querySelector('#pp-photo').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{p.photo=r.result;logAct(`added a photo for ${p.address}`);renderAll();openProperty(p.id);toast('Photo saved.')};r.readAsDataURL(f)};
-    b.querySelector('#pp-inv').onsubmit=e=>{e.preventDefault();const em=b.querySelector('#pp-email').value.trim();if(!em)return;p.owners.push({name:em,email:em,login:'Invite sent'});logAct(`invited ${em} to ${p.address}`);openProperty(p.id);toast(`Invite sent to ${em}. They'll set a password and land on this home.`)};
+    b.querySelector('#pp-inv').onsubmit=e=>{e.preventDefault();const em=b.querySelector('#pp-email').value.trim();if(!em)return;p.owners.push({name:em,email:em,login:'Invite sent',rel:b.querySelector('#pp-rel').value});logAct(`invited ${em} to ${p.address}`);openProperty(p.id);toast(`Invite sent to ${em}. They'll set a password and land on this home.`)};
     b.querySelector('#pp-save').onclick=()=>{p.status=b.querySelector('#pp-status').value;p.notes=b.querySelector('#pp-notes').value;logAct(`updated ${p.address}`);closeDrawer();renderAll();toast('Saved.')};
   });
 }
@@ -727,8 +746,170 @@ function openImport(){
       logAct(`imported ${n} properties`);closeDrawer();renderAll();toast(`Imported ${n} ${n===1?'property':'properties'}.`)}});
 }
 
+/* ---------- access, claims and moves ---------- */
+function openClaim(){
+  openDrawer('Claim my home',`
+   <p>Every home gets a letter with a one-time code. Enter it here to set up your login and link it to your address.</p>
+   <form id="f-cl" class="stack">
+    <div><label for="cl-code">Code from your letter</label><input id="cl-code" autocomplete="one-time-code" autocapitalize="characters" placeholder="Example: K7Q4-MD2X" required></div>
+    <div><label for="cl-name">Your name</label><input id="cl-name" autocomplete="name" required></div>
+    <div><label for="cl-email">Email</label><input id="cl-email" type="email" autocomplete="email" required></div>
+    <div><label for="cl-pass">Create a password</label><input id="cl-pass" type="password" autocomplete="new-password" minlength="8" required></div>
+    <p class="note small" id="cl-err" hidden></p>
+    <button type="submit">Claim my home</button>
+   </form>
+   <p class="muted small">Prototype: try the code <b>DEMO-2026</b>, or create codes from the board's Access &amp; moves tab.</p>
+   <button type="button" class="textbtn" data-act="reqaccess" style="justify-self:start">Lost your letter? Request access instead</button>`,
+  b=>b.querySelector('#f-cl').onsubmit=e=>{e.preventDefault();
+    const c=claimCodes[normCode(b.querySelector('#cl-code').value)],err=b.querySelector('#cl-err');
+    if(!c||c.used){err.hidden=false;err.textContent='That code didn’t work. Check the letter and try again, or request access and the board will help.';return}
+    const p=byId(c.propId),name=b.querySelector('#cl-name').value.trim(),email=b.querySelector('#cl-email').value.trim();
+    c.used=true;p.owners=p.owners.filter(o=>o.name!==BUILDER);p.owners.push({name,email,login:'Active',rel:'owner'});p.status='occupied';
+    USERS.homeowner={name,short:name.split(' ')[0],propId:p.id};logAct(`claimed ${p.address} with a mailed code`,name);
+    session={role:'homeowner'};closeDrawer();location.hash='dashboard';renderAll();toast(`You're linked to ${p.address}.`)});
+}
+function openRequestAccess(){
+  openDrawer('Request access',`<p>No code? Tell us who you are and which home is yours. A board member checks it against the county property records and emails you a link to sign in.</p>
+  <form id="f-ra" class="stack">
+   <div><label for="ra-name">Your name</label><input id="ra-name" autocomplete="name" required></div>
+   <div><label for="ra-email">Email</label><input id="ra-email" type="email" autocomplete="email" required></div>
+   <div><label for="ra-phone">Phone (optional)</label><input id="ra-phone" type="tel" autocomplete="tel"></div>
+   <div><label for="ra-addr">Your address in Stillwater Crossing</label><input id="ra-addr" autocomplete="street-address" required placeholder="Example: 715 Whitney Wy"></div>
+   <div><label for="ra-rel">I am</label><select id="ra-rel"><option value="owner">An owner of this home</option><option value="resident">Renting this home</option></select></div>
+   <div><label for="ra-msg">Anything the board should know? (optional)</label><textarea id="ra-msg" rows="3" placeholder="Example: We closed on the house in October."></textarea></div>
+   <button type="submit">Send request</button></form>`,
+  b=>b.querySelector('#f-ra').onsubmit=e=>{e.preventDefault();const v=id=>b.querySelector(id).value.trim();
+    accessReqs.unshift({id:Math.max(0,...accessReqs.map(r=>r.id))+1,name:v('#ra-name'),email:v('#ra-email'),phone:v('#ra-phone'),address:v('#ra-addr'),relation:v('#ra-rel'),message:v('#ra-msg'),date:fmt(TODAY),status:'pending'});
+    closeDrawer();renderAll();toast('Request sent. The board will email you once it’s approved.')});
+}
+function openHousehold(){
+  const p=myProp(),u=USERS[session.role],isOwner=(p.owners.find(o=>o.name===u.name)?.rel||'owner')!=='resident';
+  openDrawer('People on this account',`
+   <div class="fromchip">${houseSVG(p,'mini')}<div><b>${esc(p.address)}</b><br><span class="muted small">Lot ${p.lot}</span></div></div>
+   <ul class="list">${p.owners.map((o,i)=>`<li><span class="row spread"><b>${esc(o.name)}</b><span class="pill ${o.rel==='resident'?'p-info':'p-ok'}">${relLabel(o)}</span></span><span class="muted small">${esc(o.email)} · ${esc(o.login)}</span>${isOwner&&o.rel==='resident'?`<button class="textbtn" data-rm="${i}" style="justify-self:start">Remove</button>`:''}</li>`).join('')}</ul>
+   <p class="muted small">Owners see dues, payments and reports for this home. Renters can read announcements and send reports, but don't see dues.</p>
+   ${isOwner?`<form id="f-hh" class="stack"><h3>Add a renter</h3><div><label for="hh-name">Name</label><input id="hh-name" required></div><div><label for="hh-email">Email</label><input id="hh-email" type="email" required></div><button type="submit" class="ghost">Send invite</button></form>
+   <p class="muted small">Adding another owner, like a spouse or co-owner? Ask the board so they can check the county records.</p>`:''}`,
+  b=>{b.querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>{const o=p.owners.splice(+x.dataset.rm,1)[0];(p.past=p.past||[]).push({name:o.name,until:fmt(TODAY),rel:'resident'});logAct(`removed renter ${o.name} from ${p.address}`,u.name);renderAll();openHousehold();toast(`${o.name} no longer has access.`)});
+    const f=b.querySelector('#f-hh');if(f)f.onsubmit=e=>{e.preventDefault();const n=b.querySelector('#hh-name').value.trim(),em=b.querySelector('#hh-email').value.trim();p.owners.push({name:n,email:em,login:'Invite sent',rel:'resident'});logAct(`added renter ${n} to ${p.address}`,u.name);renderAll();openHousehold();toast(`Invite sent to ${em}.`)}});
+}
+function openSelling(){
+  const p=myProp(),u=USERS[session.role],s=openSale(p.id);
+  if(s){openDrawer('Selling your home',`<div class="note"><b>${s.status==='scheduled'?'Closing is set for '+s.closing+'.':'The board knows you’re selling.'}</b><br>${s.status==='scheduled'?'Your access to this home ends on the closing date, and you’ll get a final statement by email.':'Expected closing: '+(esc(s.expected)||'not set yet')+'. The board will send the dues statement to your title company.'}</div>`);return}
+  openDrawer('I’m selling my home',`<p>Let the board know early so the dues statement is ready for your title company. Nothing changes until the sale closes.</p>
+   <form id="f-sell" class="stack">
+    <div><label for="sl-date">Expected closing date (if known)</label><input id="sl-date" type="date"></div>
+    <div><label for="sl-title">Title company (if known)</label><input id="sl-title"></div>
+    <div><label for="sl-note">Anything else? (optional)</label><textarea id="sl-note" rows="3"></textarea></div>
+    <button type="submit">Tell the board</button></form>
+   <div class="stack small"><b>What happens at closing</b><span class="muted">Any balance is paid through the title company. Your login stops working for this home on the closing date, and you get a final statement of everything you paid. The new owners get their own invite and only see what happens after they move in.</span></div>`,
+  b=>b.querySelector('#f-sell').onsubmit=e=>{e.preventDefault();const d=b.querySelector('#sl-date').value;
+    sales.unshift({id:Math.max(0,...sales.map(x=>x.id))+1,propId:p.id,status:'reported',source:'seller',expected:d?fmt(new Date(d+'T12:00')):'',title:b.querySelector('#sl-title').value.trim(),note:b.querySelector('#sl-note').value.trim(),date:fmt(TODAY)});
+    logAct(`reported they are selling ${p.address}`,u.name);closeDrawer();renderAll();toast('Thanks. The board has been told.')});
+}
+function openSold(id){
+  const p=byId(id),s=openSale(id),today=new Date(TODAY.getTime()-TODAY.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  openDrawer('Mark as sold',`
+   <div class="fromchip">${houseSVG(p,'mini')}<div><b>${esc(p.address)}</b><br><span class="muted small">Now: ${ownerLine(p)||'no one linked'}</span></div></div>
+   ${s&&s.source==='seller'?`<div class="note small">The seller reported this sale on ${s.date}${s.expected?' and expects to close '+esc(s.expected):''}.</div>`:''}
+   <form id="f-sold" class="stack">
+    <div><label for="sd-date">Closing date</label><input id="sd-date" type="date" required value="${today}"></div>
+    <div><label for="sd-buyer">New owner's name</label><input id="sd-buyer" placeholder="Leave blank if not known yet"></div>
+    <div><label for="sd-email">New owner's email</label><input id="sd-email" type="email" placeholder="Their invite goes out on the closing date"></div>
+    <div><label for="sd-title">Title company</label><input id="sd-title" value="${esc(s?.title||'')}"></div>
+    <label class="check"><input type="checkbox" id="sd-stmt" checked> Email the sellers a final statement at closing</label>
+    <div class="note small">On the closing date, the current owners and renters lose access to this home. Their payments and reports stay on file for the board. The new owners only see what happens from that date on.</div>
+    <button type="submit">Save sale</button></form>`,
+  b=>b.querySelector('#f-sold').onsubmit=e=>{e.preventDefault();
+    const dv=b.querySelector('#sd-date').value,d=new Date(dv+'T12:00'),buyer=b.querySelector('#sd-buyer').value.trim(),em=b.querySelector('#sd-email').value.trim();
+    let sale=s;if(!sale){sale={id:Math.max(0,...sales.map(x=>x.id))+1,propId:p.id,source:'board',date:fmt(TODAY)};sales.unshift(sale)}
+    Object.assign(sale,{closing:fmt(d),buyer,email:em,title:b.querySelector('#sd-title').value.trim()});
+    if(dv<=today){p.past=(p.past||[]).concat(p.owners.map(o=>({name:o.name,until:sale.closing,rel:o.rel})));
+      p.owners=buyer||em?[{name:buyer||em,email:em||'—',login:em?'Invite sent':'No login yet',rel:'owner'}]:[];p.status='occupied';sale.status='completed';
+      toast(`Sale recorded. ${em?(buyer||'The new owner')+' was sent an invite.':'Add the new owner’s email when you have it.'}`)}
+    else{sale.status='scheduled';toast(`Closing set for ${fmt(d)}. Access switches over automatically that day.`)}
+    logAct(`recorded the sale of ${p.address} (closing ${fmt(d)})`);renderAll();openProperty(p.id)});
+}
+function openStatement(id){
+  const p=byId(id),led=p.ledger.slice().reverse(),owe=Math.max(0,bal(p)-p.pending)+(p.dues2027==='open'?350:0);
+  openDrawer('Account statement',`<div class="receipt">
+   <div class="row spread"><b>Stillwater Crossing HOA</b><span class="muted small">As of ${fmt(TODAY)}</span></div>
+   <dl class="kv"><dt>Property</dt><dd>${esc(p.address)}, West Milton, OH 45383</dd><dt>Lot</dt><dd>${p.lot}</dd><dt>Owners of record</dt><dd>${ownerLine(p)||'—'}</dd></dl>
+   <div class="tablewrap"><table style="min-width:0"><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead><tbody>
+    ${[2025,2026,2027].map(y=>`<tr><td>Mar 1, ${y}</td><td>${y} annual dues${y===2027?' (not due yet)':''}</td><td>${money(350)}</td></tr>`).join('')}
+    ${led.map(l=>`<tr><td>${l.date}</td><td>Payment · ${esc(l.method)}${l.status!=='Paid'?' (pending)':''}</td><td>−${money(l.amount)}</td></tr>`).join('')}
+   </tbody></table></div>
+   <dl class="kv num"><dt>Past-due balance</dt><dd>${money(bal(p))}</dd><dt>2027 dues</dt><dd>${p.dues2027==='paid'?'Paid':p.dues2027==='pending'?'Payment pending':money(350)+' due Mar 1, 2027'}</dd><dt>Total to pay everything today</dt><dd>${money(owe)}</dd></dl>
+  </div><p class="muted small">On the live site this downloads as a PDF to send to the title company or the seller.</p>`);
+}
+function openRequest(id){
+  const r=accessReqs.find(x=>x.id===id),guess=props.find(p=>r.address.toLowerCase().includes(p.address.toLowerCase()));
+  openDrawer('Access request',`
+   <dl class="kv"><dt>Name</dt><dd>${esc(r.name)}</dd><dt>Email</dt><dd>${esc(r.email)}</dd>${r.phone?`<dt>Phone</dt><dd>${esc(r.phone)}</dd>`:''}<dt>Address given</dt><dd>${esc(r.address)}</dd><dt>Says they are</dt><dd>${r.relation==='resident'?'Renting':'An owner'}</dd><dt>Sent</dt><dd>${r.date}</dd></dl>
+   ${r.message?`<p class="note">${esc(r.message)}</p>`:''}
+   <div class="note small">Before approving an owner, look the address up on the Miami County Auditor's website and check that the owner name matches. For a renter, check with the owner.</div>
+   ${guess?`<p class="small">On file for ${esc(guess.address)} now: <b>${ownerLine(guess)||'no one'}</b></p>`:''}
+   <form id="f-rq" class="stack">
+    <div><label for="rq-prop">Link to home</label><select id="rq-prop" required><option value="">Pick a home…</option>${props.map(p=>`<option value="${p.id}" ${guess&&guess.id===p.id?'selected':''}>${esc(p.address)} · Lot ${p.lot}</option>`).join('')}</select></div>
+    <div><label for="rq-rel">As</label><select id="rq-rel"><option value="owner" ${r.relation==='owner'?'selected':''}>Owner</option><option value="resident" ${r.relation==='resident'?'selected':''}>Renter</option></select></div>
+    <button type="submit">Approve and send invite</button>
+    <div class="divider">or</div>
+    <div><label for="rq-why">Reason for declining</label><input id="rq-why" placeholder="Example: Name doesn't match the county records"></div>
+    <button type="button" class="ghost" id="rq-deny">Decline request</button>
+   </form>`,
+  b=>{b.querySelector('#f-rq').onsubmit=e=>{e.preventDefault();const p=byId(b.querySelector('#rq-prop').value);if(!p)return;const rel=b.querySelector('#rq-rel').value;
+      if(rel==='owner')p.owners=p.owners.filter(o=>o.name!==BUILDER);p.owners.push({name:r.name,email:r.email,login:'Invite sent',rel});r.status='approved';
+      logAct(`approved ${r.name} for ${p.address}`);closeDrawer();renderAll();toast(`Approved. ${r.name} will get an email to set a password.`)};
+    b.querySelector('#rq-deny').onclick=()=>{r.status='denied';r.why=b.querySelector('#rq-why').value.trim();logAct(`declined the access request from ${r.name}`);closeDrawer();renderAll();toast('Request declined. They’ll get an email letting them know.')}});
+}
+function openCodes(){
+  const noLogin=props.filter(p=>p.status!=='lot'&&!p.owners.some(o=>/Active/.test(o.login)&&o.rel!=='resident')),built=props.filter(p=>p.status!=='lot');
+  openDrawer('Create claim code letters',`
+   <p>Each home gets a letter with a one-time code. Whoever enters it on the website is linked to that home, which shows they get mail there.</p>
+   <form id="f-cc" class="stack">
+    <div><label for="cc-who">Which homes?</label><select id="cc-who"><option value="nologin">Homes where no owner has signed in yet (${noLogin.length})</option><option value="all">Every home except vacant lots (${built.length})</option><option value="one">One home</option></select></div>
+    <div id="cc-onewrap" hidden><label for="cc-one">Home</label><select id="cc-one">${props.map(p=>`<option value="${p.id}">${esc(p.address)} · Lot ${p.lot}</option>`).join('')}</select></div>
+    <div><label for="cc-days">Codes stop working after</label><select id="cc-days"><option value="60">60 days</option><option value="90" selected>90 days</option><option value="180">180 days</option></select></div>
+    <p class="muted small">A new code cancels any unused code for that home.</p>
+    <button type="submit">Create codes</button></form>`,
+  b=>{const who=b.querySelector('#cc-who');who.onchange=()=>b.querySelector('#cc-onewrap').hidden=who.value!=='one';
+    b.querySelector('#f-cc').onsubmit=e=>{e.preventDefault();
+      const list=who.value==='one'?[byId(b.querySelector('#cc-one').value)]:who.value==='all'?built:noLogin;if(!list.length)return;
+      const exp=fmt(new Date(TODAY.getTime()+ +b.querySelector('#cc-days').value*864e5));
+      Object.keys(claimCodes).forEach(k=>{if(!claimCodes[k].used&&list.some(p=>p.id===claimCodes[k].propId))delete claimCodes[k]});
+      codeBatch={date:fmt(TODAY),rows:list.map(p=>{const c=makeCode();claimCodes[c]={propId:p.id,exp,used:false};return {propId:p.id,code:showCode(c),exp}})};
+      logAct(`created claim codes for ${list.length} homes`);renderBoard();showBatch()}});
+}
+function showBatch(){
+  const r=codeBatch.rows,p=byId(r[0].propId);
+  openDrawer(`${r.length} claim ${r.length===1?'code':'codes'} created`,`
+   <p>On the live site this downloads one PDF with a letter for each home, ready to mail with the dues statement. The site only keeps a scrambled copy of each code, so this is the one chance to print them. If a letter gets lost, make a new code for that home.</p>
+   <div class="receipt"><b>Stillwater Crossing HOA</b><span>${esc(p.address)}<br>West Milton, OH 45383</span>
+    <p>Our neighborhood has a new website for dues, announcements and reporting problems. To set up your login, go to <b>stillwatercrossingHOA.com</b>, choose <b>Use the code from your letter</b>, and enter:</p>
+    <span class="dues-amt num" style="font-size:2rem;letter-spacing:.08em">${r[0].code}</span>
+    <p class="muted small">This code links your login to this address. It works once and stops working ${r[0].exp}. Questions? board@stillwatercrossingHOA.com</p></div>
+   <div class="tablewrap"><table style="min-width:0"><thead><tr><th>Home</th><th>Code</th></tr></thead><tbody>${r.slice(0,12).map(x=>`<tr><td>${esc(byId(x.propId).address)}</td><td class="num">${x.code}</td></tr>`).join('')}</tbody></table></div>
+   ${r.length>12?`<p class="muted small">…and ${r.length-12} more in the PDF.</p>`:''}
+   <p class="muted small">Prototype: you can try any of these codes from the sign-in screen as a visitor.</p>`);
+}
+function boardAccess(){
+  const pend=accessReqs.filter(r=>r.status==='pending'),open=sales.filter(s=>s.status==='reported'||s.status==='scheduled');
+  const built=props.filter(p=>p.status!=='lot'),signed=built.filter(p=>p.owners.some(o=>/Active/.test(o.login))).length,out=Object.values(claimCodes).filter(c=>!c.used).length;
+  return `<div class="grid2">
+   <div class="card stack min0"><h2>Access requests</h2><p class="muted small">People asking to be linked to a home without a code.</p>
+    ${pend.length?`<ul class="list">${pend.map(r=>`<li><button class="linkrow" data-act="b-req" data-id="${r.id}"><span class="row spread"><b>${esc(r.name)}</b><span class="pill ${r.relation==='resident'?'p-info':'p-warn'}">${r.relation==='resident'?'Renter':'Owner'}</span></span><span>${esc(r.address)}</span><span class="date">${r.date}</span></button></li>`).join('')}</ul>`:'<p class="muted">No requests waiting.</p>'}</div>
+   <div class="card stack min0"><h2>Home sales</h2><p class="muted small">Sales a seller reported or the board entered. Access moves to the new owner on the closing date.</p>
+    ${open.length?`<ul class="list">${open.map(s=>{const p=byId(s.propId);return `<li><button class="linkrow" data-act="b-prop" data-id="${p.id}"><span class="row spread"><b>${esc(p.address)}</b><span class="pill ${s.status==='scheduled'?'p-info':'p-warn'}">${s.status==='scheduled'?'Closing '+s.closing:'Seller reported'}</span></span><span class="date">${s.status==='reported'?`Reported ${s.date}${s.expected?' · expects to close '+esc(s.expected):''}`:`New owner: ${esc(s.buyer||'not entered yet')}`}</span></button></li>`}).join('')}</ul>`:'<p class="muted">No sales in progress.</p>'}
+    <p class="muted small">To record a sale, open the home under Properties and choose Mark as sold.</p></div>
+  </div>
+  <div class="card stack"><div class="row spread"><h2>Claim code letters</h2><button data-act="b-codes">Create claim code letters</button></div>
+   <p class="muted">Mail each home a one-time code. Whoever enters it on the website is linked to that home. It's the simplest proof that someone gets mail at the address.</p>
+   <div class="counts"><span><b>${signed}</b> of ${built.length} homes have someone signed in</span><span><b>${out}</b> unused ${out===1?'code':'codes'} out</span>${codeBatch?`<span>Last letters made <b>${codeBatch.date}</b></span>`:''}</div>
+  </div>`;
+}
+
 /* ---------- renderers ---------- */
-function locked(title,text,btn=true){return `<div class="card stack lockcard"><p class="eyebrow">Members only</p><h1>${title}</h1><p class="lede">${text}</p>${btn?'<div class="row"><button data-act="signin">Sign in</button></div>':''}<p class="muted">New to Stillwater Crossing? Email the board and we'll send you an invite. Every login is linked to your home's address.</p></div>`}
+function locked(title,text,btn=true){return `<div class="card stack lockcard"><p class="eyebrow">Members only</p><h1>${title}</h1><p class="lede">${text}</p>${btn?'<div class="row"><button data-act="signin">Sign in</button></div>':''}<p class="muted">First time here? <button class="textbtn" data-act="claim">Use the code from your letter</button> or <button class="textbtn" data-act="reqaccess">request access</button>. Every login is linked to your home's address.</p></div>`}
 function renderChrome(){
   document.querySelectorAll('[data-act="viewas"]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.r===session.role));
   const tabs=[['home','Home'],['dashboard','My Home'],['projects','Projects']].concat(session.role==='board'?[['board','Board']]:[]);
@@ -749,7 +930,7 @@ function renderDash(){
   el.innerHTML=`
   <div class="card myhome">
     <div>${houseSVG(p,'thumb')}</div>
-    <div class="stack min0"><p class="eyebrow">My Home · Lot ${p.lot}</p><h1>${greet()}, ${u.short}.</h1><p class="lede">${esc(p.address)}, West Milton, OH 45383</p><p class="muted">On this account: ${ownerLine(p)}. Something wrong? <button class="textbtn" data-act="report">Tell the board</button></p></div>
+    <div class="stack min0"><p class="eyebrow">My Home · Lot ${p.lot}</p><h1>${greet()}, ${u.short}.</h1><p class="lede">${esc(p.address)}, West Milton, OH 45383</p><p class="muted">On this account: ${ownerLine(p)}</p><div class="row"><button class="ghost small" data-act="household">People on this account</button><button class="ghost small" data-act="selling">${openSale(p.id)?'Sale in progress':'I’m selling my home'}</button></div></div>
   </div>
   <div class="grid2">
     <div class="card tile stack">
@@ -800,12 +981,13 @@ function renderBoard(){
   if(session.role!=='board'){el.innerHTML=locked('Board members only','This area is for board members. Sign in with a board account to manage the neighborhood.',session.role==='visitor');return}
   const openIss=issues.filter(i=>i.status!=='Resolved');
   el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Board Administration</p><h1>Board dashboard</h1></div><div class="lock">${ICON.lock}Karen Patel · Treasurer · 2-step verified</div></div>
-  <div class="seg" role="group" aria-label="Board sections">${[['overview','Overview'],['properties',`Properties (${props.length})`],['issues',`Reports (${openIss.length} open)`]].map(([k,t])=>`<button data-act="b-tab" data-t="${k}" aria-pressed="${boardTab===k}">${t}</button>`).join('')}</div>
+  <div class="seg" role="group" aria-label="Board sections">${[['overview','Overview'],['properties',`Properties (${props.length})`],['issues',`Reports (${openIss.length} open)`],['access',`Access &amp; moves (${pendingAccess()+sales.filter(s=>s.status==='reported').length})`]].map(([k,t])=>`<button data-act="b-tab" data-t="${k}" aria-pressed="${boardTab===k}">${t}</button>`).join('')}</div>
   <div id="boardBody" class="stack" style="gap:2rem"></div>`;
   const body=$('#boardBody');
   if(boardTab==='overview')body.innerHTML=boardOverview();
   if(boardTab==='properties'){body.innerHTML=boardProps();wireProps()}
   if(boardTab==='issues')body.innerHTML=boardIssues();
+  if(boardTab==='access')body.innerHTML=boardAccess();
 }
 function boardOverview(){
   const paid=props.filter(p=>p.owed2026===0).length,collected=props.reduce((s,p)=>s+350-p.owed2026,0),od=props.filter(p=>bal(p)>0).sort((a,b)=>bal(b)-bal(a)),out=od.reduce((s,p)=>s+bal(p),0);
@@ -887,6 +1069,9 @@ const ACT={
   docs:d=>need('Sign in to see HOA documents.',()=>openDocs(d.cat)), doc:d=>openDoc(+d.id),
   receipt:d=>openReceipt(+d.i), myissue:d=>openMyIssue(+d.id),
   pfilt:d=>{projFilter=d.f;renderProjects()},
+  claim:()=>openClaim(), reqaccess:()=>openRequestAccess(), household:()=>openHousehold(), selling:()=>openSelling(),
+  'b-req':d=>openRequest(+d.id),'b-codes':()=>openCodes(),'b-sold':d=>openSold(+d.id),'b-stmt':d=>openStatement(+d.id),
+  'b-cancelsale':d=>{const s=sales.find(x=>x.id==d.id);s.status='cancelled';logAct(`cancelled the sale record for ${byId(s.propId).address}`);renderAll();openProperty(s.propId);toast('Sale cancelled. Nothing changes for the current owners.')},
   'b-tab':d=>{boardTab=d.t;if(d.f)propFilter={q:'',street:'',status:d.f};closeDrawer();renderBoard();scrollTo(0,0)},
   'b-pfilter':d=>{propFilter.status=d.f;renderBoard()},
   'b-ifilter':d=>{issueFilter=d.f;renderBoard()},
