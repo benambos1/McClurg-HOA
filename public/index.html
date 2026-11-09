@@ -204,6 +204,7 @@ footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);fo
 
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
+.cklist{max-height:320px;overflow-y:auto;border:2px solid var(--line);border-radius:8px;padding:.6rem .8rem;display:grid;gap:.55rem}
 /* mobile: hamburger menu instead of a crowded top bar */
 .menu-btn{display:none}
 #navwrap{display:contents}
@@ -318,6 +319,7 @@ const HOA={
   name:'Stillwater Crossing',short:'Stillwater Crossing HOA',full:'Stillwater Crossing Homeowners Association',
   place:'West Milton, Ohio',cityLine:'West Milton, OH 45383',domain:'stillwatercrossingHOA.com',
   auditor:"the Miami County Auditor's website",exampleAddr:'715 Whitney Wy',
+  brand:'#1f5c4a',brandSoft:'#e3efe9',logo:'water',
   streets:['Doris Dr','Folly Rd','Heather Pl','Joyce Ln','June Cir','Kelly Ct','Louise Ln','Rachel Ann Blvd','Stillwater St','Whitney Wy']
 };
 const noDbMsg=()=>SB_URL?'You’re offline. Connect to the internet to see your HOA account.':'This site isn’t connected to its database yet.';
@@ -457,10 +459,10 @@ function openNewPassword(){
   openDrawer('Set a new password',`<form id="f-np" class="stack"><div><label for="np-pass">New password</label><input id="np-pass" type="password" autocomplete="new-password" minlength="8" required></div><button type="submit">Save password</button></form>`,
   b=>b.querySelector('#f-np').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);const {error}=await sb.auth.updateUser({password:b.querySelector('#np-pass').value});busy(e.submitter,false);if(error)return toast(friendly(error));closeDrawer();toast('Password updated.')});
 }
-function openSignup(){
+function openSignup(code){
   openDrawer('Create your login',`<p>Use the code from the letter the board mailed to your home, or the email address the board has on file for you.</p>
    <form id="f-su" class="stack">
-    <div><label for="su-code">Code from your letter (if you have one)</label><input id="su-code" autocapitalize="characters" autocomplete="one-time-code" placeholder="Example: K7Q4-MD2X"></div>
+    <div><label for="su-code">Code from your letter (if you have one)</label><input id="su-code" autocapitalize="characters" autocomplete="one-time-code" placeholder="Example: K7Q4-MD2X" value="${esc(code||'')}"></div>
     <div><label for="su-name">Your name</label><input id="su-name" autocomplete="name" required></div>
     <div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>
     <div><label for="su-pass">Create a password (8 or more characters)</label><input id="su-pass" type="password" autocomplete="new-password" minlength="8" required></div>
@@ -486,9 +488,9 @@ function openRequestAccess(){
   b=>b.querySelector('#f-ra').onsubmit=async e=>{e.preventDefault();const f=formOf(b);busy(e.submitter,true,'Sending…');
     try{await q(sb.from('access_requests').insert({name:f('#ra-name'),email:f('#ra-email'),phone:f('#ra-phone')||null,address_text:f('#ra-addr'),relation:f('#ra-rel'),message:f('#ra-msg')||null}));closeDrawer();toast('Request sent. The board will email you once it’s reviewed.')}catch(_){busy(e.submitter,false)}});
 }
-function openNoHome(){
+function openNoHome(code){
   openDrawer('Link your home',`<p>Your login isn't linked to a home yet. Enter the code from the letter the board mailed to your house.</p>
-   <form id="f-cl" class="stack"><div><label for="cl-code">Code from your letter</label><input id="cl-code" autocapitalize="characters" autocomplete="one-time-code" required placeholder="Example: K7Q4-MD2X"></div><p class="note small" id="cl-err" hidden></p><button type="submit">Link my home</button></form>
+   <form id="f-cl" class="stack"><div><label for="cl-code">Code from your letter</label><input id="cl-code" autocapitalize="characters" autocomplete="one-time-code" required placeholder="Example: K7Q4-MD2X" value="${esc(code||'')}"></div><p class="note small" id="cl-err" hidden></p><button type="submit">Link my home</button></form>
    <div class="divider">or</div><button class="ghost" data-act="reqaccess">Request access from the board</button>`,
   b=>b.querySelector('#f-cl').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);
     const {data,error}=await sb.rpc('claim_home',{p_code:b.querySelector('#cl-code').value,p_name:A.me?.name||null});busy(e.submitter,false);
@@ -793,7 +795,7 @@ async function openProperty(id){
     <p class="muted small">They create their login at this website with that email and are linked automatically.</p></form></div>
    ${s?`<div class="note stack" style="gap:.35rem"><b>${s.status==='scheduled'?'Sale closing '+fmtD(s.closing_date):'The seller says they are selling'}</b><span class="small">${s.status==='scheduled'?`New owner: ${esc(s.buyer_name||s.buyer_email||'not entered yet')}`:`Reported ${fmtD(s.created_at)}${s.expected_close?' · expects to close '+fmtD(s.expected_close):''}${s.notes?' · '+esc(s.notes):''}`}</span><button class="textbtn" id="pp-cancelsale" style="justify-self:start">Cancel this sale</button></div>`:''}
    ${past.length?`<div class="stack"><h3>Past owners &amp; renters</h3><ul class="list">${past.map(l=>`<li><b>${esc(l.members?.name)}</b><span class="muted small">${relLabel(l.relation)} until ${fmtD(l.ended_on)}${l.ended_reason?' · '+esc(l.ended_reason):''}</span></li>`).join('')}</ul></div>`:''}
-   <div class="row"><button class="ghost small" data-act="b-sold" data-id="${p.id}">Mark as sold</button><button class="ghost small" data-act="b-stmt" data-id="${p.id}">Account statement</button><button class="ghost small" data-act="b-codes" data-id="${p.id}">Claim code letter</button></div>
+   <div class="row"><button class="ghost small" data-act="b-sold" data-id="${p.id}">Mark as sold</button><button class="ghost small" data-act="b-stmt" data-id="${p.id}">Account statement</button><button class="ghost small" data-act="b-codes" data-id="${p.id}">Print home code</button></div>
    <div class="stack"><h3>Dues</h3><dl class="kv num"><dt>Billed</dt><dd>${money(billed)}</dd><dt>Paid</dt><dd>${money(paid)}</dd><dt>Balance</dt><dd>${money(billed-paid)}</dd></dl>
      <ul class="list num">${pays.map(x=>`<li><span class="row spread"><b>${x.applies_to_year?x.applies_to_year+' · ':''}${money(x.amount)}</b><span class="pill ${x.status==='succeeded'?'p-ok':x.status==='pending'?'p-warn':'p-bad'}">${esc(x.status)}</span></span><span class="date">${fmtD(x.received_on)} · ${methodLabel(x.method)}${x.check_number?' #'+esc(x.check_number):''}</span></li>`).join('')||'<li class="muted">No payments yet.</li>'}</ul>
      <button class="ghost" data-act="b-check" data-id="${p.id}">Record a payment</button></div>
@@ -891,8 +893,8 @@ async function boardAccess(){
     ${sales.length?`<ul class="list">${sales.map(s=>`<li><button class="linkrow" data-act="b-prop" data-id="${s.properties.id}"><span class="row spread"><b>${esc(s.properties.address)}</b><span class="pill ${s.status==='scheduled'?'p-info':'p-warn'}">${s.status==='scheduled'?'Closing '+fmtD(s.closing_date):'Seller reported'}</span></span><span class="date">${s.status==='reported'?'Reported '+fmtD(s.created_at):'New owner: '+esc(s.buyer_name||s.buyer_email||'not entered yet')}</span></button></li>`).join('')}</ul>`:'<p class="muted">No sales in progress.</p>'}
     <p class="muted small">To record a sale, open the home under Properties and choose Mark as sold.</p></div>
   </div>
-  <div class="card stack"><div class="row spread"><h2>Claim code letters</h2><button data-act="b-codes">Create claim code letters</button></div>
-   <p class="muted">Mail each home a one-time code. Whoever enters it when creating their login is linked to that home. Codes are stored scrambled, so print the letters when you create them.</p></div>
+  <div class="card stack"><div class="row spread"><h2>Home code letters</h2><button data-act="b-codes">Print home codes</button></div>
+   <p class="muted">Print a one-page letter for each home with its sign-in code and a QR code, ready to mail or drop off. Whoever uses the code when creating their login is linked to that home.</p></div>
   <div class="card stack"><div class="row spread"><h2>Board &amp; site admin</h2>${canManageRoles()?'<button class="ghost small" data-act="b-addboard">Add a board member</button>':''}</div>
    <ul class="list">${staff.map(m=>`<li><span class="row spread"><b>${esc(m.name)}</b><span class="pill ${m.access==='site_admin'?'p-info':'p-ok'}">${esc(roleLabel(m))}</span></span><span class="muted small">${esc(m.email||'')} · ${m.auth_user_id?'Signed up':'No login yet'}${m.active?'':' · Turned off'}</span>${canManageRoles()&&m.access==='board'&&m.id!==A.me.id?`<button class="textbtn" data-act="b-rmboard" data-id="${m.id}" style="justify-self:start">Remove from board</button>`:''}</li>`).join('')}</ul>
    ${h?`<div class="note small">Hand-off waiting: the board lead role has been offered${h.to_member===A.me.id?' to you. <button class="textbtn" data-act="b-accept" data-id="'+h.id+'">Accept</button>':'.'}</div>`:A.me.access==='site_admin'&&staff.some(m=>m.access==='board')?'<p class="muted small">When the site is ready to hand over, the site admin offers the board lead role to a board member. After they accept, the site admin keeps managing logins and the website, and sees dues, payments and reports only when the board grants temporary support access.</p><button class="ghost small" data-act="b-handoff" style="justify-self:start">Hand off to a board lead</button>':''}
@@ -912,27 +914,52 @@ async function openRequest(id){
   b=>{b.querySelector('#f-rq').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);try{await q(sb.rpc('approve_access_request',{p_id:id,p_property_id:b.querySelector('#rq-prop').value,p_relation:b.querySelector('#rq-rel').value,p_note:null}));closeDrawer();renderBoard();toast(`Approved ${r.name}.`)}catch(_){busy(e.submitter,false)}};
     b.querySelector('#rq-deny').onclick=async e=>{busy(e.target,true);try{await q(sb.rpc('deny_access_request',{p_id:id,p_note:b.querySelector('#rq-why').value.trim()||null}));closeDrawer();renderBoard();toast('Request declined.')}catch(_){busy(e.target,false)}}});
 }
+function siteUrl(){let u=String(setting('site_url')||'').trim();if(!u)return location.origin;if(!/^https?:\/\//i.test(u))u='https://'+u;return u.replace(/\/+$/,'')}
+const loadScript=src=>new Promise((res,rej)=>{if(document.querySelector(`script[data-src="${src}"]`))return res();const el=document.createElement('script');el.src=src;el.dataset.src=src;el.onload=res;el.onerror=()=>{el.remove();rej(new Error('Could not load '+src))};document.head.appendChild(el)});
+function downloadBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000)}
 async function openCodes(oneId){
-  const opts=await propOptions(oneId);
-  openDrawer('Create claim code letters',`<p>Each home gets a letter with a one-time code. Whoever enters it when creating their login is linked to that home, which shows they get mail there.</p>
+  const props=await q(sb.from('properties').select('id,address,lot,status,property_members(relation,started_on,ended_on,members(auth_user_id))').order('lot',{nullsFirst:false}).order('street'));
+  const built=props.filter(p=>p.status!=='lot'),noLogin=built.filter(p=>!hasLogin(p)),picked=new Set(oneId?[oneId]:[]);
+  openDrawer('Print home codes',`<p>Each home gets a one-page letter with its own sign-in code and a QR code that opens the website with the code already filled in.</p>
+   <div class="note small">Letters send people to <b>${esc(siteUrl().replace(/^https?:\/\//,''))}</b>. To change it, go to Board → Settings → Website address.</div>
    <form id="f-cc" class="stack">
-    <div><label for="cc-who">Which homes?</label><select id="cc-who"><option value="nologin" ${oneId?'':'selected'}>Homes where no owner has a login yet</option><option value="all">Every home except vacant lots</option><option value="one" ${oneId?'selected':''}>One home</option></select></div>
-    <div id="cc-onewrap" ${oneId?'':'hidden'}><label for="cc-one">Home</label><select id="cc-one">${opts}</select></div>
+    <fieldset><legend>Which homes?</legend>
+     <label class="choice"><input type="radio" name="cc-who" value="nologin" ${oneId?'':'checked'}><span><b>Homes without a login yet</b><br><span class="muted small">Owners who haven't signed up</span></span><b class="num">${noLogin.length}</b></label>
+     <label class="choice"><input type="radio" name="cc-who" value="all"><span><b>All homes</b><br><span class="muted small">Every home except vacant lots</span></span><b class="num">${built.length}</b></label>
+     <label class="choice"><input type="radio" name="cc-who" value="pick" ${oneId?'checked':''}><span><b>Select homes</b><br><span class="muted small">Pick one or more</span></span><b class="num" id="cc-pickn">${picked.size}</b></label>
+    </fieldset>
+    <div id="cc-pick" class="stack" ${oneId?'':'hidden'}>
+     <input id="cc-q" type="search" placeholder="Search address or lot" aria-label="Search homes">
+     <div class="row"><button type="button" class="ghost small" id="cc-all">Select all shown</button><button type="button" class="ghost small" id="cc-none">Clear</button></div>
+     <div id="cc-list" class="cklist"></div>
+    </div>
     <div><label for="cc-days">Codes stop working after</label><select id="cc-days"><option value="60">60 days</option><option value="90" selected>90 days</option><option value="180">180 days</option></select></div>
-    <p class="muted small">A new code cancels any unused code for that home.</p><button type="submit">Create codes</button></form>`,
-  b=>{const who=b.querySelector('#cc-who');who.onchange=()=>b.querySelector('#cc-onewrap').hidden=who.value!=='one';
-    b.querySelector('#f-cc').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true,'Creating…');
-      try{let ids=null;if(who.value==='one')ids=[b.querySelector('#cc-one').value];else if(who.value==='all')ids=(await q(sb.from('properties').select('id').neq('status','lot'))).map(p=>p.id);
-        const rows=await q(sb.rpc('create_claim_codes',{p_property_ids:ids,p_days:+b.querySelector('#cc-days').value,p_relation:'owner'}));showCodes(rows)}catch(_){busy(e.submitter,false)}}});
+    <p class="muted small">A new code replaces any unused code for that home. Codes are stored scrambled, so keep the PDF once it downloads.</p>
+    <button type="submit">Create codes and download PDF</button></form>`,
+  b=>{const list=b.querySelector('#cc-list'),qq=b.querySelector('#cc-q'),wrap=b.querySelector('#cc-pick'),cnt=b.querySelector('#cc-pickn');
+    const shown=()=>{const t=qq.value.trim().toLowerCase();return built.filter(p=>!t||`${p.address} lot ${p.lot??''}`.toLowerCase().includes(t))};
+    const draw=()=>{list.innerHTML=shown().map(p=>`<label class="check"><input type="checkbox" value="${p.id}" ${picked.has(p.id)?'checked':''}><span>${esc(p.address)}${p.lot?` <span class="muted small">· Lot ${esc(p.lot)}</span>`:''}${hasLogin(p)?' <span class="pill p-ok">Signed up</span>':''}</span></label>`).join('')||'<p class="muted">No homes match.</p>';cnt.textContent=picked.size};
+    list.onchange=e=>{const c=e.target;if(c.checked)picked.add(c.value);else picked.delete(c.value);cnt.textContent=picked.size};
+    qq.oninput=draw;b.querySelector('#cc-all').onclick=()=>{shown().forEach(p=>picked.add(p.id));draw()};b.querySelector('#cc-none').onclick=()=>{picked.clear();draw()};
+    b.querySelectorAll('[name=cc-who]').forEach(r=>r.onchange=()=>{wrap.hidden=b.querySelector('[name=cc-who]:checked').value!=='pick'});
+    draw();
+    b.querySelector('#f-cc').onsubmit=async e=>{e.preventDefault();const who=b.querySelector('[name=cc-who]:checked').value;
+      const ids=who==='pick'?[...picked]:who==='all'?built.map(p=>p.id):noLogin.map(p=>p.id);
+      if(!ids.length)return toast(who==='pick'?'Pick at least one home.':'No homes match that choice.');
+      busy(e.submitter,true,'Creating codes…');
+      try{const rows=await q(sb.rpc('create_claim_codes',{p_property_ids:ids,p_days:+b.querySelector('#cc-days').value,p_relation:'owner'}));await showCodes(rows)}catch(_){busy(e.submitter,false)}}});
 }
-function showCodes(rows){
-  if(!rows.length){openDrawer('No codes created','<p>Every home already has an owner with a login. Pick “One home” or “Every home” to make codes anyway.</p>');return}
-  const site=location.host.toLowerCase().endsWith(HOA.domain.toLowerCase())?location.host:HOA.domain;
-  const letter=r=>`<div class="letter"><b>${HOA.full}</b><p>${esc(r.address)}${HOA.cityLine?'<br>'+esc(HOA.cityLine):''}</p><p>Our neighborhood has a website for dues, announcements and reporting problems. To set up your login, go to <b>${esc(site)}</b>, choose <b>Create your login</b>, and enter this code:</p><div class="code">${esc(r.code)}</div><p class="muted">This code links your login to this address. It works once and stops working ${fmtD(r.expires_at)}. Questions? ${esc(setting('contact_email'))}</p></div>`;
-  openDrawer(`${rows.length} claim ${rows.length===1?'code':'codes'} created`,`<div class="note"><b>Print these now.</b> The site keeps only a scrambled copy of each code, so they can’t be shown again. If a letter gets lost, make a new code for that home.</div>
-   <button id="cc-print" style="justify-self:start">Print letters (one per page)</button>
-   <div class="tablewrap"><table style="min-width:0"><thead><tr><th>Home</th><th>Code</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.address)}</td><td class="num">${esc(r.code)}</td></tr>`).join('')}</tbody></table></div>`,
-  b=>b.querySelector('#cc-print').onclick=()=>printHTML('Claim code letters',rows.map(letter).join('')));
+async function showCodes(rows){
+  if(!rows.length){openDrawer('No codes created','<p>None of the selected homes could be found. Try again.</p>');return}
+  const name=`${HOA.short} home codes ${todayISO()}.pdf`;let blob=null;
+  try{await loadScript('qr.js');await loadScript('letters.js');
+    blob=window.buildHomeCodePDF(rows,{name:HOA.name,full:HOA.full,url:siteUrl(),email:setting('contact_email'),cityLine:HOA.cityLine,brand:HOA.brand,brandSoft:HOA.brandSoft,logo:HOA.logo});
+    downloadBlob(blob,name)}catch(err){console.error(err);toast('The PDF couldn’t be made. Print the list below instead.')}
+  const table=`<table><thead><tr><th>Home</th><th>Code</th><th>Expires</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.address)}</td><td class="num">${esc(r.code)}</td><td>${fmtD(r.expires_at)}</td></tr>`).join('')}</tbody></table>`;
+  openDrawer(`${rows.length} home ${rows.length===1?'code':'codes'} created`,`<div class="note"><b>${blob?'Your PDF is downloading: one letter per home, ready to print.':'Print these codes now.'}</b> The site keeps only a scrambled copy of each code, so it can’t show them again. If a letter gets lost, make a new code for that home.</div>
+   <div class="row">${blob?'<button id="cc-dl">Download the PDF again</button>':''}<button class="ghost" id="cc-print">Print a simple list</button></div>
+   <div class="tablewrap">${table.replace('<table>','<table style="min-width:0">')}</div>`,
+  b=>{const d=b.querySelector('#cc-dl');if(d)d.onclick=()=>downloadBlob(blob,name);b.querySelector('#cc-print').onclick=()=>printHTML('Home codes',`<h1>${esc(HOA.short)} home codes</h1>${table}`)});
 }
 async function openAddBoard(){
   openDrawer('Add a board member',`<form id="f-ab" class="stack"><div><label for="ab-name">Name</label><input id="ab-name" required></div><div><label for="ab-email">Email</label><input id="ab-email" type="email" required></div><div><label for="ab-title">Title (optional)</label><input id="ab-title" placeholder="Example: Treasurer"></div><button type="submit">Add to board</button>
@@ -953,6 +980,7 @@ async function boardSettings(){
   const years=await q(sb.from('dues_years').select('*').order('year'));
   return `<div class="grid2">
    <div class="card stack"><h2>HOA contact info</h2><form id="f-set" class="stack">
+    <div><label for="st-url">Website address</label><input id="st-url" value="${esc(setting('site_url'))}" placeholder="${esc(HOA.domain||'yourhoa.com')}"><p class="muted small" style="margin-top:.3rem">Printed on home code letters and in their QR codes. Leave blank to use this site's current address (${esc(location.host)}).</p></div>
     <div><label for="st-email">Board email</label><input id="st-email" type="email" value="${esc(setting('contact_email'))}"></div>
     <div><label for="st-mail">Mailing address for checks</label><input id="st-mail" value="${esc(setting('mailing_address'))}" placeholder="Example: PO Box 123${HOA.cityLine?', '+esc(HOA.cityLine):''}"></div>
     <div><label for="st-meet">Board meeting schedule</label><input id="st-meet" value="${esc(setting('meeting_schedule'))}"></div>
@@ -966,7 +994,7 @@ async function boardSettings(){
 function wireSettings(){
   const body=$('#boardBody');
   body.querySelector('#f-set').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);const f=formOf(body);
-    try{await q(sb.from('settings').upsert([{key:'contact_email',value:f('#st-email'),is_public:true},{key:'mailing_address',value:f('#st-mail'),is_public:true},{key:'meeting_schedule',value:f('#st-meet'),is_public:true}].map(r=>({...r,updated_by:A.me.id,updated_at:new Date().toISOString()}))));await refresh();toast('Saved.')}catch(_){busy(e.submitter,false)}};
+    try{await q(sb.from('settings').upsert([{key:'site_url',value:f('#st-url').replace(/^https?:\/\//i,'').replace(/\/+$/,''),is_public:true},{key:'contact_email',value:f('#st-email'),is_public:true},{key:'mailing_address',value:f('#st-mail'),is_public:true},{key:'meeting_schedule',value:f('#st-meet'),is_public:true}].map(r=>({...r,updated_by:A.me.id,updated_at:new Date().toISOString()}))));await refresh();toast('Saved.')}catch(_){busy(e.submitter,false)}};
   body.querySelectorAll('[data-saveyear]').forEach(x=>x.onclick=async()=>{const y=x.dataset.saveyear;busy(x,true);try{await q(sb.from('dues_years').update({amount:parseFloat(body.querySelector(`[data-amt="${y}"]`).value),due_date:body.querySelector(`[data-due="${y}"]`).value}).eq('year',y));toast('Saved.');renderBoard()}catch(_){busy(x,false)}});
   body.querySelectorAll('[data-bill]').forEach(x=>x.onclick=async()=>{const y=x.dataset.bill;busy(x,true,'Billing…');try{const n=await q(sb.rpc('bill_annual_dues',{p_year:+y}));toast(`Billed ${y} dues to ${n} ${n===1?'home':'homes'}.`);renderBoard()}catch(_){busy(x,false)}});
   body.querySelector('#f-year').onsubmit=async e=>{e.preventDefault();const f=formOf(body);busy(e.submitter,true);try{await q(sb.from('dues_years').insert({year:+f('#ny-year'),amount:parseFloat(f('#ny-amt')),due_date:f('#ny-due')}));renderBoard();toast('Year added.')}catch(_){busy(e.submitter,false)}};
@@ -1095,7 +1123,9 @@ document.addEventListener('click',async e=>{if(!e.target.closest('[data-install]
 showInstall();
 if(!sb&&SB_URL)addEventListener('online',()=>location.reload(),{once:true});
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-if(sb)refresh();else{renderChrome();$('#homeNews').innerHTML=`<li class="muted">${noDbMsg()}</li>`}
+const urlCode=new URLSearchParams(location.search).get('code');
+if(urlCode)history.replaceState(null,'',location.pathname+location.hash);
+if(sb)refresh().then(()=>{if(urlCode)A.session?openNoHome(urlCode):openSignup(urlCode)});else{renderChrome();$('#homeNews').innerHTML=`<li class="muted">${noDbMsg()}</li>`}
 
 </script>
 </body>
