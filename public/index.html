@@ -194,6 +194,39 @@ footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);fo
 
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
+/* mobile: hamburger menu instead of a crowded top bar */
+.menu-btn{display:none}
+#navwrap{display:contents}
+@media (max-width:860px){
+  .topin{flex-wrap:nowrap;gap:.75rem}
+  .brand{min-width:0;margin-right:auto}
+  .brand b{font-size:1.15rem}
+  .menu-btn{display:inline-flex;flex:none;background:transparent;color:var(--ink);border:2px solid var(--line);min-height:48px;padding:0 .85rem;font-size:1rem}
+  .menu-btn[aria-expanded="true"]{border-color:var(--green);color:var(--green)}
+  #navwrap{display:none;position:absolute;left:0;right:0;top:100%;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 14px 28px rgba(0,0,0,.14);flex-direction:column;gap:.75rem;padding-block:.75rem 1rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-height:calc(100vh - 80px);overflow-y:auto}
+  header.top.menu-open #navwrap{display:flex}
+  nav.tabs{flex-direction:column;gap:.25rem}
+  nav.tabs a{padding:.95rem 1rem;font-size:1.15rem}
+  #acct{border-top:1px solid var(--line);padding-top:.85rem}
+  #acct .acct{justify-content:space-between}
+  #acct>button{width:100%}
+  .seg{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .seg button{flex:none}
+}
+@media (max-width:640px){
+  body{font-size:17px}
+  main{padding-block:1.25rem 3rem}
+  section.view{gap:1.25rem}
+  .card{padding:1.1rem}
+  .hero-map{display:none}
+  .lede{font-size:1.08rem}
+  h2{font-size:1.35rem}
+  .dues-amt{font-size:2.2rem}
+  .kpi b{font-size:1.6rem}
+  .drawer-body,.drawer-head{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .toolbar>div{flex:1 1 100%}
+  .toolbar select{width:100%}
+}
 body{margin:0}
 img{max-width:100%}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -206,8 +239,8 @@ img{max-width:100%}
     <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" style="fill:var(--green)"/><path d="M8 30 L22 15 L36 30" fill="none" style="stroke:var(--green-ink)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="17" y="24" width="10" height="9" style="fill:var(--green-ink)"/></svg>
     <span><b>Stillwater Crossing HOA</b><small>West Milton, Ohio</small></span>
   </a>
-  <nav class="tabs" aria-label="Main" id="nav"></nav>
-  <div id="acct"></div>
+  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="navwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span></button>
+  <div id="navwrap"><nav class="tabs" aria-label="Main" id="nav"></nav><div id="acct"></div></div>
 </div></header>
 
 <main class="wrap">
@@ -269,7 +302,13 @@ img{max-width:100%}
 /* Stillwater Crossing HOA portal — production. Data and permissions live in Supabase (row-level security). */
 const SB_URL='https://yqrwpjmohmlcodauhjeu.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlxcndwam1vaG1sY29kYXVoamV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQwNTgwOTcsImV4cCI6MjEwOTYzNDA5N30.1weCbyD3OVsPKWpwVaNm6py8Xw4e4zPMRADFXMQZlSk'; // public key; data is protected by row-level security
-const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const HOA={
+  name:'Stillwater Crossing',short:'Stillwater Crossing HOA',full:'Stillwater Crossing Homeowners Association',
+  place:'West Milton, Ohio',cityLine:'West Milton, OH 45383',domain:'stillwatercrossingHOA.com',
+  auditor:"the Miami County Auditor's website",exampleAddr:'715 Whitney Wy',
+  streets:['Doris Dr','Folly Rd','Heather Pl','Joyce Ln','June Cir','Kelly Ct','Louise Ln','Rachel Ann Blvd','Stillwater St','Whitney Wy']
+};
+const sb=SB_URL?supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
@@ -306,7 +345,7 @@ const ICON={
  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7M5 10v10h14V10"/></svg>'
 };
-const STREETS=['Doris Dr','Folly Rd','Heather Pl','Joyce Ln','June Cir','Kelly Ct','Louise Ln','Rachel Ann Blvd','Stillwater St','Whitney Wy'];
+const STREETS=HOA.streets;
 const ISTAT={'New':'p-warn','Board reviewing':'p-info','Scheduled':'p-info','Resolved':'p-ok'};
 const PSTAT={'In Progress':'p-info','Awaiting Developer Response':'p-warn','Completed':'p-ok','On Hold':'p-neutral'};
 const PF={'In Progress':'progress','Awaiting Developer Response':'developer','Completed':'done','On Hold':'progress'};
@@ -372,7 +411,7 @@ async function doRefresh(){
   A.settings=Object.fromEntries(((await sb.from('settings').select('key,value')).data||[]).map(r=>[r.key,r.value]));
   await renderAll();
 }
-sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY')setTimeout(openNewPassword,0);if(ev==='INITIAL_SESSION')return;setTimeout(refresh,0)});
+if(sb)sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY')setTimeout(openNewPassword,0);if(ev==='INITIAL_SESSION')return;setTimeout(refresh,0)});
 function need(reason,fn){if(!A.session)return openSignIn(reason,fn);if(!A.homes.length)return openNoHome();fn()}
 
 /* ---------- sign in / sign up / recovery ---------- */
@@ -389,7 +428,7 @@ function openSignIn(reason,then){
    </form>
    <div class="divider">New here?</div>
    <div class="stack"><button type="button" class="ghost" data-act="signup">Create your login</button><button type="button" class="textbtn" data-act="reqaccess" style="justify-self:start">No letter or invite? Request access</button></div>
-   <p class="muted small">Every login is linked to a home in Stillwater Crossing.</p>`,
+   <p class="muted small">Every login is linked to a home in ${HOA.name}.</p>`,
   b=>{b.querySelector('#f-in').onsubmit=async e=>{e.preventDefault();const btn=e.submitter;busy(btn,true,'Signing in…');
       const {error}=await sb.auth.signInWithPassword({email:b.querySelector('#in-email').value.trim(),password:b.querySelector('#in-pass').value});
       busy(btn,false);if(error){const er=b.querySelector('#in-err');er.hidden=false;er.textContent=/confirm/i.test(error.message)?'Please confirm your email first. Check your inbox for the link.':'That email and password don’t match. Try again or reset your password.';return}
@@ -427,7 +466,7 @@ function openRequestAccess(){
    <div><label for="ra-name">Your name</label><input id="ra-name" autocomplete="name" required></div>
    <div><label for="ra-email">Email</label><input id="ra-email" type="email" autocomplete="email" required value="${esc(A.session?.user?.email||'')}"></div>
    <div><label for="ra-phone">Phone (optional)</label><input id="ra-phone" type="tel" autocomplete="tel"></div>
-   <div><label for="ra-addr">Your address in Stillwater Crossing</label><input id="ra-addr" autocomplete="street-address" required placeholder="Example: 715 Whitney Wy"></div>
+   <div><label for="ra-addr">Your address in ${HOA.name}</label><input id="ra-addr" autocomplete="street-address" required placeholder="Example: ${esc(HOA.exampleAddr)}"></div>
    <div><label for="ra-rel">I am</label><select id="ra-rel"><option value="owner">An owner of this home</option><option value="resident">Renting this home</option></select></div>
    <div><label for="ra-msg">Anything the board should know? (optional)</label><textarea id="ra-msg" rows="3"></textarea></div>
    <button type="submit">Send request</button></form>`,
@@ -486,7 +525,7 @@ function confirmIn(b,msg,fn){const box=document.createElement('div');box.classNa
 function openPay(){
   if(A.settings.payments_live===true){toast('Online payments are coming soon.');return}
   openDrawer('Pay HOA dues',`<div class="note"><b>Online payment is coming soon.</b><br>The board is setting up bank transfer and card payments. Until then, please pay by check.</div>
-   <dl class="kv"><dt>Make checks payable to</dt><dd>Stillwater Crossing HOA</dd><dt>Mail to</dt><dd>${esc(setting('mailing_address'))||'Ask the board for the mailing address'}</dd><dt>Questions</dt><dd>${esc(setting('contact_email'))}</dd></dl>
+   <dl class="kv"><dt>Make checks payable to</dt><dd>${HOA.short}</dd><dt>Mail to</dt><dd>${esc(setting('mailing_address'))||'Ask the board for the mailing address'}</dd><dt>Questions</dt><dd>${esc(setting('contact_email'))}</dd></dl>
    <p class="muted small">Write your address on the memo line. Your balance on this site updates when the board records your check.</p>`);
 }
 async function openReport(){
@@ -544,10 +583,10 @@ async function openSelling(){
   b=>b.querySelector('#f-sell').onsubmit=async e=>{e.preventDefault();const f=formOf(b);busy(e.submitter,true);try{await q(sb.rpc('report_selling',{p_property_id:p.id,p_expected_close:f('#sl-date')||null,p_title_company:f('#sl-title')||null,p_note:f('#sl-note')||null}));closeDrawer();toast('Thanks. The board has been told.')}catch(_){busy(e.submitter,false)}});
 }
 function openPaymentDetail(pay,p){
-  openDrawer('Receipt',`<div class="receipt"><div class="row spread"><b>Stillwater Crossing HOA</b><span class="stamp">${pay.status==='succeeded'?'PAID':esc(pay.status.toUpperCase())}</span></div>
+  openDrawer('Receipt',`<div class="receipt"><div class="row spread"><b>${HOA.short}</b><span class="stamp">${pay.status==='succeeded'?'PAID':esc(pay.status.toUpperCase())}</span></div>
    <dl class="kv num"><dt>Date</dt><dd>${fmtD(pay.received_on)}</dd><dt>Property</dt><dd>${esc(p.address)}</dd><dt>For</dt><dd>${pay.applies_to_year?pay.applies_to_year+' annual dues':'HOA account'}</dd><dt>Method</dt><dd>${methodLabel(pay.method)}${pay.check_number?' #'+esc(pay.check_number):''}</dd><dt>Amount</dt><dd>${money(pay.amount)}</dd></dl></div>
    <button class="ghost" id="rc-print" style="justify-self:start">Print receipt</button>`,
-  b=>b.querySelector('#rc-print').onclick=()=>printHTML('Receipt',`<h1>Stillwater Crossing HOA — Receipt</h1><table><tr><td>Date</td><td>${fmtD(pay.received_on)}</td></tr><tr><td>Property</td><td>${esc(p.address)}</td></tr><tr><td>For</td><td>${pay.applies_to_year?pay.applies_to_year+' annual dues':'HOA account'}</td></tr><tr><td>Method</td><td>${methodLabel(pay.method)}${pay.check_number?' #'+esc(pay.check_number):''}</td></tr><tr><td>Amount</td><td>${money(pay.amount)}</td></tr><tr><td>Status</td><td>${esc(pay.status)}</td></tr></table>`));
+  b=>b.querySelector('#rc-print').onclick=()=>printHTML('Receipt',`<h1>${HOA.short} — Receipt</h1><table><tr><td>Date</td><td>${fmtD(pay.received_on)}</td></tr><tr><td>Property</td><td>${esc(p.address)}</td></tr><tr><td>For</td><td>${pay.applies_to_year?pay.applies_to_year+' annual dues':'HOA account'}</td></tr><tr><td>Method</td><td>${methodLabel(pay.method)}${pay.check_number?' #'+esc(pay.check_number):''}</td></tr><tr><td>Amount</td><td>${money(pay.amount)}</td></tr><tr><td>Status</td><td>${esc(pay.status)}</td></tr></table>`));
 }
 
 /* ---------- views ---------- */
@@ -564,7 +603,11 @@ async function renderAll(){
   renderChrome();const v=currentView();VIEWS.forEach(n=>$('#v-'+n).hidden=n!==v);
   try{if(v==='home')await renderHome();else if(v==='dashboard')await renderDash();else if(v==='projects')await renderProjects();else await renderBoard()}catch(e){console.error(e)}
 }
-addEventListener('hashchange',()=>{renderAll();scrollTo(0,0)});
+addEventListener('hashchange',()=>{setMenu(false);renderAll();scrollTo(0,0)});
+function setMenu(open){$('header.top').classList.toggle('menu-open',open);$('#menuBtn').setAttribute('aria-expanded',open);$('#menuBtn span').textContent=open?'Close':'Menu'}
+$('#menuBtn').onclick=()=>setMenu(!$('header.top').classList.contains('menu-open'));
+$('#navwrap').addEventListener('click',e=>{if(e.target.closest('a,button'))setTimeout(()=>setMenu(false),0)});
+addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
 
 async function renderHome(){
   $('#contact').innerHTML=`<dt>Email</dt><dd>${esc(setting('contact_email'))||'—'}</dd>${setting('mailing_address')?`<dt>Mailing address</dt><dd>${esc(setting('mailing_address'))}</dd>`:''}<dt>Board meetings</dt><dd>${esc(setting('meeting_schedule'))||'—'}</dd><dt>Emergency</dt><dd>Call 911</dd>`;
@@ -576,7 +619,7 @@ function locked(title,text){return `<div class="card stack lockcard"><p class="e
 async function renderDash(){
   const el=$('#v-dashboard');
   if(!A.session){el.innerHTML=locked('Sign in to see your home','Your dues, reports and HOA documents are linked to your address.');return}
-  if(!A.homes.length){el.innerHTML=`<div class="card stack lockcard"><p class="eyebrow">Almost there</p><h1>${A.me?esc(greet()+', '+A.me.name.split(' ')[0]+'.'):'Link your home'}</h1><p class="lede">${isStaff()?'Your board account isn’t linked to a home. If you live in Stillwater Crossing, a board member can link you from the home’s profile, or you can use the code from your letter.':'Your login isn’t linked to a home yet. Use the code from the letter the board mailed to your house, or ask the board for access.'}</p><div class="row"><button data-act="nohome">Enter my code</button><button class="ghost" data-act="reqaccess">Request access</button>${isStaff()?'<a class="btn ghost" href="#board">Go to the board dashboard</a>':''}</div></div>`;return}
+  if(!A.homes.length){el.innerHTML=`<div class="card stack lockcard"><p class="eyebrow">Almost there</p><h1>${A.me?esc(greet()+', '+A.me.name.split(' ')[0]+'.'):'Link your home'}</h1><p class="lede">${isStaff()?'Your board account isn’t linked to a home. If you live in '+HOA.name+', a board member can link you from the home’s profile, or you can use the code from your letter.':'Your login isn’t linked to a home yet. Use the code from the letter the board mailed to your house, or ask the board for access.'}</p><div class="row"><button data-act="nohome">Enter my code</button><button class="ghost" data-act="reqaccess">Request access</button>${isStaff()?'<a class="btn ghost" href="#board">Go to the board dashboard</a>':''}</div></div>`;return}
   el.innerHTML='<p class="muted">Loading your home…</p>';
   const h=myHome(),p=h.properties,owner=h.relation!=='resident';
   const [bal,pays,people,anns,evs,docs,iss,years,photo]=await Promise.all([
@@ -596,7 +639,7 @@ async function renderDash(){
   const homePick=A.homes.length>1?`<div><label for="home-pick">Home</label><select id="home-pick">${A.homes.map(x=>`<option value="${x.property_id}" ${x.property_id===A.homeId?'selected':''}>${esc(x.properties.address)}</option>`).join('')}</select></div>`:'';
   el.innerHTML=`
   <div class="card myhome"><div>${houseArt(p,'thumb',photo)}</div>
-    <div class="stack min0"><p class="eyebrow">My Home${p.lot?' · Lot '+esc(p.lot):''}</p><h1>${greet()}, ${esc(A.me.name.split(' ')[0])}.</h1><p class="lede">${esc(p.address)}, West Milton, OH 45383</p>
+    <div class="stack min0"><p class="eyebrow">My Home${p.lot?' · Lot '+esc(p.lot):''}</p><h1>${greet()}, ${esc(A.me.name.split(' ')[0])}.</h1><p class="lede">${esc(p.address)}${HOA.cityLine?', '+esc(HOA.cityLine):''}</p>
     <p class="muted">On this account: ${names}</p>${homePick}
     <div class="row"><button class="ghost small" data-act="household">People on this account</button>${owner?'<button class="ghost small" data-act="selling">I’m selling my home</button>':''}</div></div></div>
   <div class="grid2">
@@ -794,7 +837,7 @@ async function openStatement(id){
   const st=await q(sb.rpc('account_statement',{p_property_id:id}));
   const rows=[...st.charges.map(c=>({d:c.date,t:c.description||'Charge',a:Number(c.amount)})),...st.payments.filter(x=>x.status==='succeeded').map(x=>({d:x.date,t:'Payment · '+methodLabel(x.method)+(x.check_number?' #'+x.check_number:''),a:-Number(x.amount)}))].sort((a,b)=>a.d<b.d?-1:1);
   const table=`<table><thead><tr><th>Date</th><th>Item</th><th style="text-align:right">Amount</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${fmtD(r.d)}</td><td>${esc(r.t)}</td><td style="text-align:right">${r.a<0?'−':''}${money(Math.abs(r.a))}</td></tr>`).join('')||'<tr><td colspan="3">No activity</td></tr>'}</tbody></table>`;
-  const head=`<b>Stillwater Crossing HOA — Account statement</b><div>As of ${fmtD(st.as_of)}</div><div>${esc(st.property.address)}, ${esc(st.property.city)}, ${esc(st.property.state)} ${esc(st.property.zip)}${st.property.lot?' · Lot '+esc(st.property.lot):''}</div><div>Owners of record: ${esc((st.owners||[]).join(', ')||'—')}</div>`;
+  const head=`<b>${HOA.short} — Account statement</b><div>As of ${fmtD(st.as_of)}</div><div>${esc(st.property.address)}, ${esc(st.property.city)}, ${esc(st.property.state)} ${esc(st.property.zip)}${st.property.lot?' · Lot '+esc(st.property.lot):''}</div><div>Owners of record: ${esc((st.owners||[]).join(', ')||'—')}</div>`;
   const tot=`<p><b>Past due:</b> ${money(st.past_due)} &nbsp; <b>Total balance (including billed dues not yet due):</b> ${money(st.balance)}</p>`;
   openDrawer('Account statement',`<div class="receipt"><div class="stack" style="gap:.2rem">${head}</div><div class="tablewrap">${table}</div>${tot}</div><button id="st-print" style="justify-self:start">Print or save as PDF</button>`,
   b=>b.querySelector('#st-print').onclick=()=>printHTML('Account statement',`<h1>${head}</h1>${table}${tot}`));
@@ -847,7 +890,7 @@ async function openRequest(id){
   const guess=props.find(p=>r.address_text.toLowerCase().includes(p.address.toLowerCase()));
   openDrawer('Access request',`<dl class="kv"><dt>Name</dt><dd>${esc(r.name)}</dd><dt>Email</dt><dd>${esc(r.email)}</dd>${r.phone?`<dt>Phone</dt><dd>${esc(r.phone)}</dd>`:''}<dt>Address given</dt><dd>${esc(r.address_text)}</dd><dt>Says they are</dt><dd>${r.relation==='resident'?'Renting':'An owner'}</dd><dt>Sent</dt><dd>${fmtD(r.created_at)}</dd></dl>
    ${r.message?`<p class="note">${esc(r.message)}</p>`:''}
-   <div class="note small">Before approving an owner, look the address up on the Miami County Auditor's website and check that the owner name matches. For a renter, check with the owner.</div>
+   <div class="note small">Before approving an owner, look the address up on ${HOA.auditor} and check that the owner name matches. For a renter, check with the owner.</div>
    <form id="f-rq" class="stack"><div><label for="rq-prop">Link to home</label><select id="rq-prop" required><option value="">Pick a home…</option>${props.map(p=>`<option value="${p.id}" ${guess&&guess.id===p.id?'selected':''}>${esc(p.address)}${p.lot?' · Lot '+esc(p.lot):''}</option>`).join('')}</select></div>
     <div><label for="rq-rel">As</label><select id="rq-rel"><option value="owner" ${r.relation==='owner'?'selected':''}>Owner</option><option value="resident" ${r.relation==='resident'?'selected':''}>Renter</option></select></div>
     <button type="submit">Approve</button><div class="divider">or</div>
@@ -871,8 +914,8 @@ async function openCodes(oneId){
 }
 function showCodes(rows){
   if(!rows.length){openDrawer('No codes created','<p>Every home already has an owner with a login. Pick “One home” or “Every home” to make codes anyway.</p>');return}
-  const site=location.host.includes('stillwatercrossing')?location.host:'stillwatercrossingHOA.com';
-  const letter=r=>`<div class="letter"><b>Stillwater Crossing Homeowners Association</b><p>${esc(r.address)}<br>West Milton, OH 45383</p><p>Our neighborhood has a website for dues, announcements and reporting problems. To set up your login, go to <b>${esc(site)}</b>, choose <b>Create your login</b>, and enter this code:</p><div class="code">${esc(r.code)}</div><p class="muted">This code links your login to this address. It works once and stops working ${fmtD(r.expires_at)}. Questions? ${esc(setting('contact_email'))}</p></div>`;
+  const site=location.host.toLowerCase().endsWith(HOA.domain.toLowerCase())?location.host:HOA.domain;
+  const letter=r=>`<div class="letter"><b>${HOA.full}</b><p>${esc(r.address)}${HOA.cityLine?'<br>'+esc(HOA.cityLine):''}</p><p>Our neighborhood has a website for dues, announcements and reporting problems. To set up your login, go to <b>${esc(site)}</b>, choose <b>Create your login</b>, and enter this code:</p><div class="code">${esc(r.code)}</div><p class="muted">This code links your login to this address. It works once and stops working ${fmtD(r.expires_at)}. Questions? ${esc(setting('contact_email'))}</p></div>`;
   openDrawer(`${rows.length} claim ${rows.length===1?'code':'codes'} created`,`<div class="note"><b>Print these now.</b> The site keeps only a scrambled copy of each code, so they can’t be shown again. If a letter gets lost, make a new code for that home.</div>
    <button id="cc-print" style="justify-self:start">Print letters (one per page)</button>
    <div class="tablewrap"><table style="min-width:0"><thead><tr><th>Home</th><th>Code</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.address)}</td><td class="num">${esc(r.code)}</td></tr>`).join('')}</tbody></table></div>`,
@@ -898,7 +941,7 @@ async function boardSettings(){
   return `<div class="grid2">
    <div class="card stack"><h2>HOA contact info</h2><form id="f-set" class="stack">
     <div><label for="st-email">Board email</label><input id="st-email" type="email" value="${esc(setting('contact_email'))}"></div>
-    <div><label for="st-mail">Mailing address for checks</label><input id="st-mail" value="${esc(setting('mailing_address'))}" placeholder="Example: PO Box 123, West Milton, OH 45383"></div>
+    <div><label for="st-mail">Mailing address for checks</label><input id="st-mail" value="${esc(setting('mailing_address'))}" placeholder="Example: PO Box 123${HOA.cityLine?', '+esc(HOA.cityLine):''}"></div>
     <div><label for="st-meet">Board meeting schedule</label><input id="st-meet" value="${esc(setting('meeting_schedule'))}"></div>
     <button type="submit">Save contact info</button></form></div>
    <div class="card stack"><h2>Online payments</h2><p><span class="pill p-neutral">Off</span></p><p class="muted">Bank transfer and card payments through the HOA's own Stripe account turn on after the board approves them and they've been tested. Until then, homeowners are told to mail a check.</p></div>
@@ -984,7 +1027,7 @@ function openAddProp(){
 }
 function parseCSV(text){const rows=[];let row=[],cell='',qt=false;for(let i=0;i<text.length;i++){const c=text[i];if(qt){if(c==='"'&&text[i+1]==='"'){cell+='"';i++}else if(c==='"')qt=false;else cell+=c}else if(c==='"')qt=true;else if(c===','){row.push(cell);cell=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell=''}else cell+=c}if(cell||row.length){row.push(cell);rows.push(row)}return rows.map(r=>r.map(x=>x.trim())).filter(r=>r.some(Boolean))}
 function openImport(){
-  openDrawer('Import the property list',`<p>Start from a spreadsheet of every address. The Miami County Auditor's website lists each parcel with its address, owner and parcel ID, and the developer's plat shows lot numbers.</p>
+  openDrawer('Import the property list',`<p>Start from a spreadsheet of every address. ${HOA.auditor.charAt(0).toUpperCase()+HOA.auditor.slice(1)} lists each parcel with its address, owner and parcel ID, and the developer's plat shows lot numbers.</p>
    <div class="note small">Save it as CSV with these columns, in this order: <b>address, lot, owner, email, status, parcel</b>. Only address is required. Status is occupied, construction or lot.</div>
    <div><label for="im-file">Choose a CSV file</label><input id="im-file" type="file" accept=".csv,text/csv"></div>
    <div><label for="im-text">Or paste rows here</label><textarea id="im-text" rows="7" placeholder="address,lot,owner,email,status,parcel"></textarea></div>
@@ -1022,8 +1065,8 @@ const ACT={
   'b-addprop':()=>openAddProp(),'b-import':()=>openImport()
 };
 function confirmInline(msg){return new Promise(res=>{openDrawer('Please confirm',`<p>${esc(msg)}</p><div class="row"><button id="ci-y">Yes</button><button class="ghost" id="ci-n">Cancel</button></div>`,b=>{b.querySelector('#ci-y').onclick=()=>{closeDrawer();res(true)};b.querySelector('#ci-n').onclick=()=>{closeDrawer();res(false)}})})}
-document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el.dataset)}});
-refresh();
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();if(!sb)return toast('This site isn’t connected to its database yet.');f(el.dataset)}});
+if(sb)refresh();else{renderChrome();$('#homeNews').innerHTML='<li class="muted">This site isn’t connected to its database yet.</li>'}
 
 </script>
 </body>
