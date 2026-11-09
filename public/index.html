@@ -343,15 +343,15 @@ function formOf(b){return id=>{const el=b.querySelector(id);return el.type==='ch
 function previewFiles(input,box){box.innerHTML='';[...input.files].forEach(f=>{if(f.type.startsWith('image/')){const i=new Image();i.src=URL.createObjectURL(f);i.alt=f.name;box.appendChild(i)}else{const s=document.createElement('span');s.className='file';s.textContent=f.name;box.appendChild(s)}})}
 
 /* ---------- session ---------- */
-const A={session:null,me:null,aal:'aal1',homes:[],homeId:null,settings:{},mfaAsked:false};
+const A={session:null,me:null,homes:[],homeId:null,settings:{}};
 const isStaff=()=>!!A.me&&A.me.access!=='homeowner';
-const boardOK=()=>isStaff()&&A.aal==='aal2';
+const boardOK=()=>isStaff();
 const canManageRoles=()=>boardOK()&&['site_admin','board_lead'].includes(A.me.access);
 const myHome=()=>A.homes.find(h=>h.property_id===A.homeId);
 let refreshing=null;
 function refresh(){if(!refreshing)refreshing=doRefresh().finally(()=>refreshing=null);return refreshing}
 async function doRefresh(){
-  const {data:{session}}=await sb.auth.getSession();A.session=session;A.me=null;A.homes=[];A.aal='aal1';
+  const {data:{session}}=await sb.auth.getSession();A.session=session;A.me=null;A.homes=[];
   if(session){
     const uid=session.user.id;
     let me=(await sb.from('members').select('*').eq('auth_user_id',uid).maybeSingle()).data;
@@ -363,7 +363,6 @@ async function doRefresh(){
       me=(await sb.from('members').select('*').eq('auth_user_id',uid).maybeSingle()).data;
     }
     A.me=me;
-    const aal=await sb.auth.mfa.getAuthenticatorAssuranceLevel();A.aal=aal.data?.currentLevel||'aal1';
     if(me){
       const links=(await sb.from('property_members').select('id,property_id,member_id,relation,started_on,ended_on,properties(id,address,lot,status,photo_path)').eq('member_id',me.id)).data||[];
       A.homes=links.filter(l=>isActive(l)&&l.properties).sort((a,b)=>(a.properties.lot||0)-(b.properties.lot||0));
@@ -372,12 +371,11 @@ async function doRefresh(){
   }
   A.settings=Object.fromEntries(((await sb.from('settings').select('key,value')).data||[]).map(r=>[r.key,r.value]));
   await renderAll();
-  if(isStaff()&&A.aal!=='aal2'&&!A.mfaAsked){A.mfaAsked=true;openMfa()}
 }
 sb.auth.onAuthStateChange((ev)=>{if(ev==='PASSWORD_RECOVERY')setTimeout(openNewPassword,0);if(ev==='INITIAL_SESSION')return;setTimeout(refresh,0)});
 function need(reason,fn){if(!A.session)return openSignIn(reason,fn);if(!A.homes.length)return openNoHome();fn()}
 
-/* ---------- sign in / sign up / recovery / MFA ---------- */
+/* ---------- sign in / sign up / recovery ---------- */
 let pendingThen=null;
 function openSignIn(reason,then){
   pendingThen=then||null;
@@ -391,7 +389,7 @@ function openSignIn(reason,then){
    </form>
    <div class="divider">New here?</div>
    <div class="stack"><button type="button" class="ghost" data-act="signup">Create your login</button><button type="button" class="textbtn" data-act="reqaccess" style="justify-self:start">No letter or invite? Request access</button></div>
-   <p class="muted small">Every login is linked to a home in Stillwater Crossing. Board members also enter a 6-digit code from an authenticator app.</p>`,
+   <p class="muted small">Every login is linked to a home in Stillwater Crossing.</p>`,
   b=>{b.querySelector('#f-in').onsubmit=async e=>{e.preventDefault();const btn=e.submitter;busy(btn,true,'Signing in…');
       const {error}=await sb.auth.signInWithPassword({email:b.querySelector('#in-email').value.trim(),password:b.querySelector('#in-pass').value});
       busy(btn,false);if(error){const er=b.querySelector('#in-err');er.hidden=false;er.textContent=/confirm/i.test(error.message)?'Please confirm your email first. Check your inbox for the link.':'That email and password don’t match. Try again or reset your password.';return}
@@ -445,25 +443,6 @@ function openNoHome(){
     if(error)return toast(friendly(error));if(!data.ok){const er=b.querySelector('#cl-err');er.hidden=false;er.textContent=data.message;return}
     closeDrawer();await refresh();location.hash='dashboard';toast(`You're linked to ${data.address}.`)});
 }
-async function openMfa(){
-  const {data,error}=await sb.auth.mfa.listFactors();if(error)return toast(friendly(error));
-  const all=data.all||[],ver=all.find(f=>f.factor_type==='totp'&&f.status==='verified');
-  const finish=async(factorId,code,btn)=>{busy(btn,true,'Checking…');const r=await sb.auth.mfa.challengeAndVerify({factorId,code:code.replace(/\D/g,'')});busy(btn,false);
-    if(r.error)return toast('That code didn’t work. Use the newest 6-digit code from your app.');closeDrawer();await refresh();toast('Verified. Board tools are unlocked.')};
-  if(ver){openDrawer('Confirm it’s you',`<p>Board accounts need a second step. Open your authenticator app and enter the 6-digit code for Stillwater Crossing HOA.</p>
-     <form id="f-mfa" class="stack"><div><label for="mfa-code">6-digit code</label><input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required></div><button type="submit">Verify</button></form>`,
-    b=>b.querySelector('#f-mfa').onsubmit=e=>{e.preventDefault();finish(ver.id,b.querySelector('#mfa-code').value,e.submitter)});return}
-  for(const f of all.filter(f=>f.status==='unverified'))await sb.auth.mfa.unenroll({factorId:f.id});
-  const en=await sb.auth.mfa.enroll({factorType:'totp',friendlyName:'Stillwater Crossing HOA '+new Date().toISOString().slice(0,16)});
-  if(en.error)return toast(friendly(en.error));
-  openDrawer('Set up 2-step sign-in',`<p>Board accounts protect homeowners' private information, so they need a second step at sign-in.</p>
-   <ol style="margin:0;padding-left:1.3rem;display:grid;gap:.4rem"><li>Install an authenticator app on your phone, such as Google Authenticator or Microsoft Authenticator.</li><li>In the app, add an account and scan this code.</li><li>Type the 6-digit code the app shows.</li></ol>
-   <div style="background:#fff;border-radius:10px;padding:12px;justify-self:start"><img src="${en.data.totp.qr_code}" alt="QR code for your authenticator app" width="200" height="200"></div>
-   <p class="small muted">Can't scan? Enter this key in the app instead: <b style="word-break:break-all">${esc(en.data.totp.secret)}</b></p>
-   <form id="f-mfa" class="stack"><div><label for="mfa-code">6-digit code</label><input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required></div><button type="submit">Finish setup</button></form>`,
-  b=>b.querySelector('#f-mfa').onsubmit=e=>{e.preventDefault();finish(en.data.id,b.querySelector('#mfa-code').value,e.submitter)});
-}
-
 /* ---------- shared content drawers ---------- */
 async function openAnn(id){
   const a=await q(sb.from('announcements').select('*').eq('id',id).maybeSingle());if(!a)return;
@@ -665,9 +644,8 @@ let boardTab='overview',propFilter={q:'',street:'',status:'all'},issueFilter='op
 async function renderBoard(){
   const el=$('#v-board');
   if(!isStaff()){el.innerHTML=`<div class="card stack lockcard"><p class="eyebrow">Members only</p><h1>Board members only</h1><p class="lede">This area is for board members.</p></div>`;return}
-  if(A.aal!=='aal2'){el.innerHTML=`<div class="card stack lockcard"><p class="eyebrow">One more step</p><h1>Confirm it’s you</h1><p class="lede">Board tools need the 6-digit code from your authenticator app.</p><div class="row"><button data-act="mfa">Enter code</button></div></div>`;return}
   const tabs=[['overview','Overview'],['properties','Properties'],['issues','Reports'],['access','Access &amp; moves'],['settings','Settings']];
-  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Board Administration</p><h1>Board dashboard</h1></div><div class="lock">${ICON.lock}${esc(A.me.name)} · ${esc(roleLabel(A.me))} · 2-step verified</div></div>
+  el.innerHTML=`<div class="row spread"><div class="stack min0"><p class="eyebrow">Board Administration</p><h1>Board dashboard</h1></div><div class="lock">${ICON.lock}${esc(A.me.name)} · ${esc(roleLabel(A.me))}</div></div>
   <div class="seg" role="group" aria-label="Board sections">${tabs.map(([k,t])=>`<button data-act="b-tab" data-t="${k}" aria-pressed="${boardTab===k}">${t}</button>`).join('')}</div>
   <div id="boardBody" class="stack" style="gap:2rem"><p class="muted">Loading…</p></div>`;
   const body=$('#boardBody');
@@ -902,7 +880,7 @@ function showCodes(rows){
 }
 async function openAddBoard(){
   openDrawer('Add a board member',`<form id="f-ab" class="stack"><div><label for="ab-name">Name</label><input id="ab-name" required></div><div><label for="ab-email">Email</label><input id="ab-email" type="email" required></div><div><label for="ab-title">Title (optional)</label><input id="ab-title" placeholder="Example: Treasurer"></div><button type="submit">Add to board</button>
-   <p class="muted small">If they already have a login with that email, they get board access right away. Otherwise they create a login at this website with that email. Board members set up a 6-digit authenticator code the first time they sign in.</p></form>`,
+   <p class="muted small">If they already have a login with that email, they get board access right away. Otherwise they create a login at this website with that email.</p></form>`,
   b=>b.querySelector('#f-ab').onsubmit=async e=>{e.preventDefault();const f=formOf(b);busy(e.submitter,true);
     try{const ex=(await q(sb.from('members').select('id').ilike('email',f('#ab-email')).limit(1)))[0];
       if(ex)await q(sb.from('members').update({access:'board',board_title:f('#ab-title')||null,active:true}).eq('id',ex.id));
@@ -1025,8 +1003,8 @@ function openImport(){
 
 /* ---------- actions ---------- */
 const ACT={
-  signin:()=>openSignIn(),signup:()=>openSignup(),reqaccess:()=>openRequestAccess(),nohome:()=>openNoHome(),mfa:()=>openMfa(),
-  signout:async()=>{await sb.auth.signOut();A.mfaAsked=false;location.hash='home';toast('Signed out.')},
+  signin:()=>openSignIn(),signup:()=>openSignup(),reqaccess:()=>openRequestAccess(),nohome:()=>openNoHome(),
+  signout:async()=>{await sb.auth.signOut();location.hash='home';toast('Signed out.')},
   pay:()=>need('Sign in to see your dues.',()=>{location.hash='dashboard';openPay()}),
   report:()=>need('Sign in to report an issue. Reports are linked to your home.',openReport),
   events:()=>openEvents(),event:d=>openEvent(+d.id),ann:d=>openAnn(+d.id),allann:()=>openAllAnn(),
