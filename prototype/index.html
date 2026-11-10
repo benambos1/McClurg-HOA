@@ -1,4 +1,4 @@
-<title>Stillwater Crossing HOA Portal</title>
+<title>Stillwater Crossings HOA Portal</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
@@ -196,7 +196,7 @@ footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);fo
 <header class="top"><div class="wrap topin">
   <a class="brand" href="#home">
     <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden="true"><rect width="44" height="44" rx="9" style="fill:var(--green)"/><path d="M8 30 L22 15 L36 30" fill="none" style="stroke:var(--green-ink)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/><rect x="17" y="24" width="10" height="9" style="fill:var(--green-ink)"/></svg>
-    <span><b>Stillwater Crossing HOA</b><small>West Milton, Ohio · 200 homes</small></span>
+    <span><b>Stillwater Crossings HOA</b><small>West Milton, Ohio · 200 homes</small></span>
   </a>
   <nav class="tabs" aria-label="Main" id="nav"></nav>
   <div id="acct"></div>
@@ -255,7 +255,7 @@ footer{border-top:1px solid var(--line);padding-block:2rem;color:var(--muted);fo
 </main>
 
 <footer><div class="wrap row spread">
-  <span>Stillwater Crossing Homeowners Association · stillwatercrossingHOA.com</span><span>Prototype · Phase 1</span>
+  <span>Stillwater Crossings Homeowners Association · stillwatercrossingHOA.com</span><span>Prototype · Phase 1</span>
 </div></footer>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -466,7 +466,7 @@ function openSignIn(reason,then){
 }
 function mfa(){
   $('#drawerTitle').textContent='Confirm it’s you';
-  $('#drawerBody').innerHTML=`<p>Board accounts need a second step. Open your authenticator app and enter the 6-digit code for Stillwater Crossing HOA.</p>
+  $('#drawerBody').innerHTML=`<p>Board accounts need a second step. Open your authenticator app and enter the 6-digit code for Stillwater Crossings HOA.</p>
    <form id="f-mfa" class="stack"><div><label for="mfa-code">6-digit code</label><input id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="482913"></div><button type="submit">Verify and sign in</button></form>`;
   $('#f-mfa').onsubmit=e=>{e.preventDefault();finishSignIn('board')};
 }
@@ -498,7 +498,7 @@ function openPay(){
   bd=>{bd.querySelector('#pay-go').onclick=()=>{
     const m=bd.querySelector('input[name=pm]:checked').value,amt=m==='card'?total+fee:total;
     $('#drawerBody').innerHTML=`<div class="checkout"><div class="lockline">${ICON.lock} checkout.stripe.com</div>
-      <b>Stillwater Crossing HOA · ${money(amt)}</b>
+      <b>Stillwater Crossings HOA · ${money(amt)}</b>
       <p>In the finished site, this step is Stripe's secure page. You'd ${m==='ach'?'pick your bank and sign in to it':'enter your card'} there, then come back here automatically.</p></div>
       <button id="pay-sim">Simulate a successful payment</button><button class="ghost" id="pay-back">Go back</button>`;
     $('#pay-back').onclick=openPay;
@@ -515,7 +515,7 @@ function openPay(){
 }
 function openReceipt(i){
   const p=myProp(),l=p.ledger[i];
-  openDrawer('Receipt',`<div class="receipt"><div class="row spread"><b>Stillwater Crossing HOA</b><span class="stamp">PAID</span></div>
+  openDrawer('Receipt',`<div class="receipt"><div class="row spread"><b>Stillwater Crossings HOA</b><span class="stamp">PAID</span></div>
    <dl class="kv num"><dt>Receipt no.</dt><dd>SC-${l.year}-${String(p.lot).padStart(4,'0')}</dd><dt>Date</dt><dd>${l.date}</dd><dt>Property</dt><dd>${esc(p.address)} · Lot ${p.lot}</dd><dt>Paid by</dt><dd>${ownerLine(p)}</dd><dt>For</dt><dd>${l.year} annual dues</dd><dt>Method</dt><dd>${esc(l.method)}</dd><dt>Amount</dt><dd>${money(l.amount)}</dd></dl></div>
    <p class="muted small">On the live site this receipt downloads as a PDF.</p>`);
 }
@@ -629,18 +629,18 @@ function openRemind(){
   const od=props.filter(p=>bal(p)-p.pending>0),open27=props.filter(p=>p.dues2027==='open'&&p.status==='occupied');
   openDrawer('Send dues reminders',`
    <div><label for="rm-who">Send to</label><select id="rm-who"><option value="od">Homes with a past-due balance (${od.length})</option><option value="27">Homes that haven't paid 2027 dues (${open27.length})</option></select></div>
-   <div><label for="rm-subj">Subject</label><input id="rm-subj" value="Your Stillwater Crossing HOA dues are past due"></div>
+   <div><label for="rm-subj">Subject</label><input id="rm-subj" value="Your Stillwater Crossings HOA dues are past due"></div>
    <div><label for="rm-body">Message</label><textarea id="rm-body" rows="8">Hello,
 
 Our records show a balance of {balance} for {address}. You can pay online at stillwatercrossingHOA.com by bank transfer or card, or mail a check to the HOA.
 
 If you've already paid, thank you, and please disregard this note.
 
-Stillwater Crossing HOA Board</textarea></div>
+Stillwater Crossings HOA Board</textarea></div>
    <p class="muted small">{balance} and {address} fill in for each home. Emails go to every owner with a login on that home.</p>
    <button id="rm-send">Send to ${od.length} homes</button>`,
   b=>{const who=b.querySelector('#rm-who'),btn=b.querySelector('#rm-send');
-    who.onchange=()=>{const n=who.value==='od'?od.length:open27.length;btn.textContent=`Send to ${n} homes`;b.querySelector('#rm-subj').value=who.value==='od'?'Your Stillwater Crossing HOA dues are past due':'Reminder: 2027 HOA dues are due March 1'};
+    who.onchange=()=>{const n=who.value==='od'?od.length:open27.length;btn.textContent=`Send to ${n} homes`;b.querySelector('#rm-subj').value=who.value==='od'?'Your Stillwater Crossings HOA dues are past due':'Reminder: 2027 HOA dues are due March 1'};
     btn.onclick=()=>{const list=who.value==='od'?od:open27;list.forEach(p=>p.lastReminder=fmt(TODAY));logAct(`sent dues reminders to ${list.length} homes`);closeDrawer();renderAll();toast(`Reminders queued for ${list.length} homes. (Prototype: no emails sent.)`)}});
 }
 function openPost(){
@@ -774,7 +774,7 @@ function openRequestAccess(){
    <div><label for="ra-name">Your name</label><input id="ra-name" autocomplete="name" required></div>
    <div><label for="ra-email">Email</label><input id="ra-email" type="email" autocomplete="email" required></div>
    <div><label for="ra-phone">Phone (optional)</label><input id="ra-phone" type="tel" autocomplete="tel"></div>
-   <div><label for="ra-addr">Your address in Stillwater Crossing</label><input id="ra-addr" autocomplete="street-address" required placeholder="Example: 715 Whitney Wy"></div>
+   <div><label for="ra-addr">Your address in Stillwater Crossings</label><input id="ra-addr" autocomplete="street-address" required placeholder="Example: 715 Whitney Wy"></div>
    <div><label for="ra-rel">I am</label><select id="ra-rel"><option value="owner">An owner of this home</option><option value="resident">Renting this home</option></select></div>
    <div><label for="ra-msg">Anything the board should know? (optional)</label><textarea id="ra-msg" rows="3" placeholder="Example: We closed on the house in October."></textarea></div>
    <button type="submit">Send request</button></form>`,
@@ -833,7 +833,7 @@ function openSold(id){
 function openStatement(id){
   const p=byId(id),led=p.ledger.slice().reverse(),owe=Math.max(0,bal(p)-p.pending)+(p.dues2027==='open'?350:0);
   openDrawer('Account statement',`<div class="receipt">
-   <div class="row spread"><b>Stillwater Crossing HOA</b><span class="muted small">As of ${fmt(TODAY)}</span></div>
+   <div class="row spread"><b>Stillwater Crossings HOA</b><span class="muted small">As of ${fmt(TODAY)}</span></div>
    <dl class="kv"><dt>Property</dt><dd>${esc(p.address)}, West Milton, OH 45383</dd><dt>Lot</dt><dd>${p.lot}</dd><dt>Owners of record</dt><dd>${ownerLine(p)||'—'}</dd></dl>
    <div class="tablewrap"><table style="min-width:0"><thead><tr><th>Date</th><th>Item</th><th>Amount</th></tr></thead><tbody>
     ${[2025,2026,2027].map(y=>`<tr><td>Mar 1, ${y}</td><td>${y} annual dues${y===2027?' (not due yet)':''}</td><td>${money(350)}</td></tr>`).join('')}
@@ -884,7 +884,7 @@ function showBatch(){
   const r=codeBatch.rows,p=byId(r[0].propId);
   openDrawer(`${r.length} claim ${r.length===1?'code':'codes'} created`,`
    <p>On the live site this downloads one PDF with a letter for each home, ready to mail with the dues statement. The site only keeps a scrambled copy of each code, so this is the one chance to print them. If a letter gets lost, make a new code for that home.</p>
-   <div class="receipt"><b>Stillwater Crossing HOA</b><span>${esc(p.address)}<br>West Milton, OH 45383</span>
+   <div class="receipt"><b>Stillwater Crossings HOA</b><span>${esc(p.address)}<br>West Milton, OH 45383</span>
     <p>Our neighborhood has a new website for dues, announcements and reporting problems. To set up your login, go to <b>stillwatercrossingHOA.com</b>, choose <b>Use the code from your letter</b>, and enter:</p>
     <span class="dues-amt num" style="font-size:2rem;letter-spacing:.08em">${r[0].code}</span>
     <p class="muted small">This code links your login to this address. It works once and stops working ${r[0].exp}. Questions? board@stillwatercrossingHOA.com</p></div>

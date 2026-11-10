@@ -1,9 +1,9 @@
-# Stillwater Crossing HOA website
+# Stillwater Crossings HOA website
 
-Homeowner portal for Stillwater Crossing HOA (West Milton, OH).
+Homeowner portal for Stillwater Crossings HOA (West Milton, OH).
 
 - `public/` is the live site Vercel deploys (project root directory = `public`). One page, no build step.
-- Data, logins and permissions live in Supabase (project "Stillwater Crossing HOA"). Every table uses row-level security: homeowners only see their own home; board tools need a board login.
+- Data, logins and permissions live in Supabase (Supabase project named "Stillwater Crossing HOA"). Every table uses row-level security: homeowners only see their own home; board tools need a board login.
 - The key in `public/index.html` is Supabase's public (anon) key. It is meant to be in the page; it can only do what the security rules allow. Never put the service-role key or Stripe secret keys in this repo.
 - `prototype/` is the original clickable mockup with sample data. It is not deployed.
 

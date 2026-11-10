@@ -1,6 +1,6 @@
-/* Stillwater Crossing HOA app: keeps the site's frame and icons available so it opens like an app.
+/* Stillwater Crossings HOA app: keeps the site's frame and icons available so it opens like an app.
    Homeowner data (dues, reports, sign-in) always comes live from the database and is never stored here. */
-const VERSION='stillwater-v1';
+const VERSION='stillwater-v2';
 const SHELL=['./','index.html','manifest.webmanifest','icon.svg','icon-192.png','icon-512.png','apple-touch-icon.png','favicon.ico'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(VERSION).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>!k.startsWith(VERSION)).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
