@@ -13,8 +13,9 @@ Homeowner portal for Stillwater Crossings HOA (West Milton, OH).
 - Attack Protection: turn on leaked password protection.
 
 ## Roles
-- Site admin (Ben, Ambos Design Works): full access during setup. After the board-lead hand-off, manages logins and the website only, unless the board lead grants temporary support access.
-- Board lead / board members: everything for the HOA.
+- Site admin (Ben, Ambos Design Works): full access during setup. After the board-admin hand-off, manages logins and the website only, unless the board admin grants temporary support access. Can remove board members.
+- Board admin (the old "board lead", stored as `board_lead`): everything for the HOA, and can remove board members.
+- Board members: everything for the HOA, including adding board members (name now, email later, then Invite to the portal). They can't remove board members.
 - Homeowners: their own home's dues, payments, reports, people; announcements, events, documents, projects.
 - Renters: added by an owner; see announcements and their reports, not dues.
 
