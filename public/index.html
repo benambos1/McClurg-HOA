@@ -978,14 +978,29 @@ async function showCodes(rows){
   b=>{const d=b.querySelector('#cc-dl');if(d)d.onclick=()=>downloadBlob(blob,name);b.querySelector('#cc-print').onclick=()=>printHTML('Home codes',`<h1>${esc(HOA.short)} home codes</h1>${table}`)});
 }
 async function openAddBoard(){
-  openDrawer('Add a board member',`<form id="f-ab" class="stack"><div><label for="ab-name">Name</label><input id="ab-name" required autocomplete="off"></div><div><label for="ab-email">Email (add it later if you don't have it yet)</label><input id="ab-email" type="email" autocomplete="off"></div><div><label for="ab-title">Title (optional)</label><input id="ab-title" placeholder="Example: Treasurer"></div><button type="submit">Add to board</button>
+  const people=(await q(sb.from('members').select('id,name,email,auth_user_id,property_members(relation,ended_on,properties(address))').eq('access','homeowner').eq('active',true).order('name')))
+    .map(m=>{const l=(m.property_members||[]).filter(x=>!x.ended_on||x.ended_on>todayISO());return {...m,addr:l.map(x=>x.properties?.address).filter(Boolean).join(', '),rel:l.some(x=>x.relation==='owner')?'Owner':l.length?'Renter':''}});
+  const opt=m=>`<option value="${m.id}">${esc(m.name)}${m.addr?' · '+esc(m.addr):''}${m.rel?' · '+m.rel:''}${m.auth_user_id?'':' · no login yet'}</option>`;
+  openDrawer('Add a board member',`<div class="seg" role="group" aria-label="Who are you adding?"><button type="button" data-mode="pick" aria-pressed="${people.length?'true':'false'}">A neighbor on the site</button><button type="button" data-mode="new" aria-pressed="${people.length?'false':'true'}">Someone new</button></div>
+   <form id="f-pick" class="stack" ${people.length?'':'hidden'}><div><label for="pk-q">Find a resident</label><input id="pk-q" type="search" placeholder="Name, email or address" autocomplete="off"></div>
+    <div><label for="pk-who">Resident</label><select id="pk-who" size="8" required style="min-height:12rem">${people.map(opt).join('')}</select><p class="muted small" style="margin-top:.3rem" id="pk-n">${people.length} ${people.length===1?'resident':'residents'}</p></div>
+    <div><label for="pk-title">Title (optional)</label><input id="pk-title" placeholder="Example: Treasurer"></div><button type="submit">Add to board</button>
+    <p class="muted small">They keep their home and dues just as they are, and get the Board tab too. If they haven't signed up yet, send them the invite once they're on the board.</p></form>
+   <form id="f-ab" class="stack" ${people.length?'hidden':''}><div><label for="ab-name">Name</label><input id="ab-name" required autocomplete="off"></div><div><label for="ab-email">Email (add it later if you don't have it yet)</label><input id="ab-email" type="email" autocomplete="off"></div><div><label for="ab-title">Title (optional)</label><input id="ab-title" placeholder="Example: Treasurer"></div><button type="submit">Add to board</button>
    <p class="muted small">Once their email is added, use <b>Invite to the portal</b> to send them the link. When they create a login with that email, they get board access automatically. If they already have a login with that email, they get board access right away.</p></form>`,
-  b=>b.querySelector('#f-ab').onsubmit=async e=>{e.preventDefault();const f=formOf(b);busy(e.submitter,true);const em=f('#ab-email').toLowerCase()||null;
+  b=>{const fp=b.querySelector('#f-pick'),fa=b.querySelector('#f-ab'),sel=b.querySelector('#pk-who');
+    b.querySelectorAll('[data-mode]').forEach(x=>x.onclick=()=>{const pick=x.dataset.mode==='pick';fp.hidden=!pick;fa.hidden=pick;b.querySelectorAll('[data-mode]').forEach(y=>y.setAttribute('aria-pressed',y===x))});
+    b.querySelector('#pk-q').oninput=e=>{const t=e.target.value.trim().toLowerCase();const list=people.filter(m=>!t||[m.name,m.email,m.addr].some(v=>(v||'').toLowerCase().includes(t)));
+      sel.innerHTML=list.map(opt).join('');if(list.length===1)sel.value=list[0].id;b.querySelector('#pk-n').textContent=list.length?`${list.length} ${list.length===1?'resident':'residents'}`:'No one matches. Try another spelling, or choose Someone new.'};
+    fp.onsubmit=async e=>{e.preventDefault();if(!sel.value)return toast('Pick a resident first.');busy(e.submitter,true);const m=people.find(x=>x.id===sel.value);
+      try{await q(sb.from('members').update({access:'board',board_title:b.querySelector('#pk-title').value.trim()||null}).eq('id',m.id));closeDrawer();renderBoard();
+        toast(m.auth_user_id?`${m.name} is on the board now.`:m.email?`${m.name} is on the board. Next, send them the invite.`:`${m.name} is on the board. Add their email, then send the invite.`)}catch(_){busy(e.submitter,false)}};
+    fa.onsubmit=async e=>{e.preventDefault();const f=formOf(b);busy(e.submitter,true);const em=f('#ab-email').toLowerCase()||null;
     try{const ex=em?(await q(sb.from('members').select('id,access,auth_user_id').ilike('email',em).limit(1)))[0]:null;
       if(ex&&ex.access!=='homeowner'){busy(e.submitter,false);return toast('That email is already on the board.')}
       if(ex)await q(sb.from('members').update({access:'board',board_title:f('#ab-title')||null,active:true}).eq('id',ex.id));
       else await q(sb.from('members').insert({name:f('#ab-name'),email:em,access:'board',board_title:f('#ab-title')||null}));
-      closeDrawer();renderBoard();toast(ex?.auth_user_id?'Added. They already have a login, so they have board access now.':em?'Added. Next, send them the invite.':'Added. Add their email when you have it.')}catch(_){busy(e.submitter,false)}});
+      closeDrawer();renderBoard();toast(ex?.auth_user_id?'Added. They already have a login, so they have board access now.':em?'Added. Next, send them the invite.':'Added. Add their email when you have it.')}catch(_){busy(e.submitter,false)}}});
 }
 async function openEditBoard(id){
   const m=(await q(sb.from('members').select('id,name,email,board_title,auth_user_id,invited_at').eq('id',id)))[0];if(!m)return;
