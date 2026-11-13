@@ -908,15 +908,26 @@ async function boardAccess(){
 async function openRequest(id){
   const r=await q(sb.from('access_requests').select('*').eq('id',id).single()),props=await q(sb.from('properties').select('id,address,lot').order('lot',{nullsFirst:false}).order('street'));
   const guess=props.find(p=>r.address_text.toLowerCase().includes(p.address.toLowerCase()));
+  const am=r.address_text.replace(/\(.*?\)/g,'').split(',')[0].trim().match(/^(\d+[A-Za-z]?)\s+(.+)$/),nAddr={num:am?am[1]:'',street:am?(STREETS.find(x=>x.toLowerCase()===am[2].trim().toLowerCase())||am[2].trim()):''};
   openDrawer('Access request',`<dl class="kv"><dt>Name</dt><dd>${esc(r.name)}</dd><dt>Email</dt><dd>${esc(r.email)}</dd>${r.phone?`<dt>Phone</dt><dd>${esc(r.phone)}</dd>`:''}<dt>Address given</dt><dd>${esc(r.address_text)}</dd><dt>Says they are</dt><dd>${r.relation==='resident'?'Renting':'An owner'}</dd><dt>Sent</dt><dd>${fmtD(r.created_at)}</dd></dl>
    ${r.message?`<p class="note">${esc(r.message)}</p>`:''}
    <div class="note small">Before approving an owner, look the address up on ${HOA.auditor} and check that the owner name matches. For a renter, check with the owner.</div>
-   <form id="f-rq" class="stack"><div><label for="rq-prop">Link to home</label><select id="rq-prop" required><option value="">Pick a home…</option>${props.map(p=>`<option value="${p.id}" ${guess&&guess.id===p.id?'selected':''}>${esc(p.address)}${p.lot?' · Lot '+esc(p.lot):''}</option>`).join('')}</select></div>
+   <form id="f-rq" class="stack"><div><label for="rq-prop">Link to home</label><select id="rq-prop" required><option value="">Pick a home…</option><option value="__new" ${!guess?'selected':''}>+ Add a new home…</option>${props.map(p=>`<option value="${p.id}" ${guess&&guess.id===p.id?'selected':''}>${esc(p.address)}${p.lot?' · Lot '+esc(p.lot):''}</option>`).join('')}</select>
+     ${guess?'':`<p class="muted small" style="margin-top:.3rem">${esc(r.address_text)} isn't in the home list yet, so it's filled in below as a new home. If it's listed under a different spelling, pick it instead.</p>`}</div>
+    <div class="stack note" id="rq-new" hidden><b>New home</b>
+     <div class="row"><div style="flex:0 1 130px"><label for="rq-num">House no.</label><input id="rq-num" value="${esc(nAddr.num)}"></div><div class="grow"><label for="rq-street">Street</label><input id="rq-street" list="rq-streets" value="${esc(nAddr.street)}"><datalist id="rq-streets">${STREETS.map(x=>`<option>${x}</option>`).join('')}</datalist></div></div>
+     <div class="row"><div class="grow"><label for="rq-lot">Lot (optional)</label><input id="rq-lot" inputmode="numeric"></div><div class="grow"><label for="rq-status">Status</label><select id="rq-status"><option value="occupied">Occupied</option><option value="construction">Under construction</option></select></div></div></div>
     <div><label for="rq-rel">As</label><select id="rq-rel"><option value="owner" ${r.relation==='owner'?'selected':''}>Owner</option><option value="resident" ${r.relation==='resident'?'selected':''}>Renter</option></select></div>
     <button type="submit">Approve</button><div class="divider">or</div>
     <div><label for="rq-why">Reason for declining</label><input id="rq-why"></div><button type="button" class="ghost" id="rq-deny">Decline request</button></form>
    <p class="muted small">After approving, let them know to create their login at this website with ${esc(r.email)}. Email notices from the site are coming in a later step.</p>`,
-  b=>{b.querySelector('#f-rq').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);try{await q(sb.rpc('approve_access_request',{p_id:id,p_property_id:b.querySelector('#rq-prop').value,p_relation:b.querySelector('#rq-rel').value,p_note:null}));closeDrawer();renderBoard();toast(`Approved ${r.name}.`)}catch(_){busy(e.submitter,false)}};
+  b=>{const sel=b.querySelector('#rq-prop'),box=b.querySelector('#rq-new');
+    const sync=()=>{const on=sel.value==='__new';box.hidden=!on;b.querySelector('#rq-num').required=on;b.querySelector('#rq-street').required=on};sel.onchange=sync;sync();
+    b.querySelector('#f-rq').onsubmit=async e=>{e.preventDefault();busy(e.submitter,true);const f=formOf(b);
+    try{let pid=sel.value;
+      if(pid==='__new'){const addr=(f('#rq-num')+' '+f('#rq-street')).toLowerCase();const dup=props.find(p=>p.address.toLowerCase()===addr);
+        if(dup)pid=dup.id;else pid=(await q(sb.from('properties').insert({house_number:f('#rq-num'),street:f('#rq-street'),lot:f('#rq-lot')?+f('#rq-lot'):null,status:f('#rq-status')}).select('id').single())).id}
+      await q(sb.rpc('approve_access_request',{p_id:id,p_property_id:pid,p_relation:b.querySelector('#rq-rel').value,p_note:null}));closeDrawer();renderBoard();toast(sel.value==='__new'?`Added the home and approved ${r.name}.`:`Approved ${r.name}.`)}catch(_){busy(e.submitter,false)}};
     b.querySelector('#rq-deny').onclick=async e=>{busy(e.target,true);try{await q(sb.rpc('deny_access_request',{p_id:id,p_note:b.querySelector('#rq-why').value.trim()||null}));closeDrawer();renderBoard();toast('Request declined.')}catch(_){busy(e.target,false)}}});
 }
 function siteUrl(){let u=String(setting('site_url')||'').trim();if(!u)return location.origin;if(!/^https?:\/\//i.test(u))u='https://'+u;return u.replace(/\/+$/,'')}
